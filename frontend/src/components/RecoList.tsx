@@ -12,7 +12,7 @@ export function RecoList({ items, onOpenArticle }: RecoListProps) {
   }
 
   return (
-    <div className="reco-grid">
+    <div className="reco-list">
       {items.map((item) => (
         <RecoCard key={item.id} item={item} onOpenArticle={onOpenArticle} />
       ))}

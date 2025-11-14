@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ApiKeyBanner } from '../components/ApiKeyBanner'
 import { ArticleDetail } from '../components/ArticleDetail'
 import { Loader } from '../components/Loader'
@@ -9,12 +9,10 @@ import {
   fetchHealth,
   fetchProfile,
   fetchRecommendations,
-  listArticles,
   saveProfile,
 } from '../lib/api'
 import type {
   ArticleDetail as ArticleDetailType,
-  ArticleSummary,
   HealthResponse,
   Profile,
   ProfileResponse,
@@ -34,11 +32,10 @@ export function Home() {
   const [recoError, setRecoError] = useState<string | null>(null)
 
   const [query, setQuery] = useState('')
-  const [articles, setArticles] = useState<ArticleSummary[]>([])
-
   const [activeArticle, setActiveArticle] = useState<ArticleDetailType | null>(null)
   const [articleLoading, setArticleLoading] = useState(false)
   const [articleError, setArticleError] = useState<string | null>(null)
+  const recoSectionRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -58,12 +55,6 @@ export function Home() {
     fetchProfile()
       .then((data) => setProfile(data))
       .finally(() => setProfileLoading(false))
-  }, [])
-
-  useEffect(() => {
-    listArticles()
-      .then((list) => setArticles(list))
-      .catch(() => undefined)
   }, [])
 
   const readyProfile: Profile | null = useMemo(() => {
@@ -89,9 +80,16 @@ export function Home() {
     }
   }
 
+  const scrollToRecommendations = () => {
+    if (recoSectionRef.current) {
+      recoSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   const handleRecommend = async () => {
     setRecoLoading(true)
     setRecoError(null)
+    scrollToRecommendations()
     try {
       const response = await fetchRecommendations({
         profile: readyProfile ?? undefined,
@@ -122,55 +120,12 @@ export function Home() {
 
   return (
     <main className="app-shell">
-      <section className="hero-grid">
-        <div className="card">
-          <h1>WAKE Career RAG Recommender</h1>
-          <p className="tagline">プロフィールとクエリから WAKE 記事を引用付きでレコメンド</p>
-          <ApiKeyBanner health={health} />
-          <div className="status-block">
-            <span className="label">API health</span>
-            {health ? (
-              <span className="status ok">{health.mode} mode ready</span>
-            ) : healthError ? (
-              <span className="status error">{healthError}</span>
-            ) : (
-              <span className="status info">checking…</span>
-            )}
-          </div>
-          <div className="actions-row">
-            <label>
-              <span>追加の検索キーワード</span>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="AI PM, 1on1, ハイブリッドワークなど"
-              />
-            </label>
-            <button className="primary" onClick={handleRecommend} disabled={recoLoading}>
-              {recoLoading ? '取得中…' : 'おすすめを取得'}
-            </button>
-          </div>
-          {recoError && <p className="status error">{recoError}</p>}
+      <section className="card profile-card">
+        <div className="profile-copy">
+          <p className="eyebrow">STEP 1</p>
+          <h1>まずはプロフィールを登録しましょう</h1>
+          <p className="tagline">現在の役割や興味を登録すると、RAG 推薦があなた仕様になります。</p>
         </div>
-        <div className="card">
-          <h2>最新の WAKE 記事</h2>
-          {articles.length === 0 ? (
-            <p className="muted">seed スクリプトで記事を登録するとここに表示されます。</p>
-          ) : (
-            <ul>
-              {articles.slice(0, 5).map((article) => (
-                <li key={article.slug}>
-                  <button className="ghost" onClick={() => handleOpenArticle(article.slug)}>
-                    {article.title}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-
-      <section className="card">
         {profileLoading ? <Loader /> : null}
         <ProfileForm
           key={profile?.updated_at ?? profile?.name ?? 'empty-profile'}
@@ -180,8 +135,47 @@ export function Home() {
         />
       </section>
 
-      <section className="card">
-        <h2>おすすめ記事</h2>
+      <section className="card cta-card">
+        <div className="cta-content">
+          <p className="eyebrow">STEP 2</p>
+          <h2 className="hero-title">あなたのキャリアにおすすめのコンテンツを生成する！</h2>
+          <p className="hero-subtitle">
+            保存したプロフィールと追加キーワードをもとに、WAKE Media の記事から引用付きで提案します。
+          </p>
+          <ApiKeyBanner health={health} />
+          <div className="status-block cta-status">
+            <span className="label">API health</span>
+            {health ? (
+              <span className="status ok">{health.mode} mode ready</span>
+            ) : healthError ? (
+              <span className="status error">{healthError}</span>
+            ) : (
+              <span className="status info">checking…</span>
+            )}
+          </div>
+          <label className="query-field">
+            <span>気になるテーマ（任意）</span>
+            <small className="field-hint">
+              例: 1on1 / マネジメント転向 / リモートワーク など、絞り込みたいトピックを入れると検索に掛け合わせます
+            </small>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="気になるキーワードを入力（空でもOK）"
+            />
+          </label>
+          <button className="primary hero-button" onClick={handleRecommend} disabled={recoLoading}>
+            {recoLoading ? 'おすすめ生成中…' : 'おすすめを取得'}
+          </button>
+          {recoError && <p className="status error">{recoError}</p>}
+        </div>
+      </section>
+
+      <section className="card reco-section" ref={recoSectionRef}>
+        <div className="reco-header">
+          <h2>おすすめ記事</h2>
+          <p className="muted">提案されたカードから記事を開き、引用元を確認できます。</p>
+        </div>
         {recoLoading && <Loader />}
         <RecoList items={recommendations} onOpenArticle={handleOpenArticle} />
       </section>
