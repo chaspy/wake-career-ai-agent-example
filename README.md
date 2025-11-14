@@ -2,6 +2,12 @@
 
 ローカルで Vite/React フロントと FastAPI バックエンドを並列起動できる最小スキャフォールドです。Step 1 ではプロフィール API と SQLite/JSON の永続化を追加しました。今後のステップで RAG 推薦機能や LangGraph を実装していきます。
 
+## 必須ツール
+
+- [uv](https://github.com/astral-sh/uv) （Python 依存の解決と仮想環境作成に利用）
+- Node.js 20 以上 / npm 10 以上
+- make
+
 ## 現状の開発フロー (Step 0)
 
 ```bash
@@ -9,6 +15,10 @@ cp .env.sample .env  # 任意。未作成でも MODE=fake で起動
 make install         # backend と frontend の依存を導入
 MODE=fake make dev   # :8089 (API) / :5173 (Vite) を同時起動
 ```
+
+`make install` では uv が `backend/.venv` を生成し、`requirements.txt` を同環境にインストールします。uv が PATH に無い場合は先に `curl -LsSf https://astral.sh/uv/install.sh | sh` などで導入してください。
+
+Makefile はリポジトリ直下の `.env` を自動で読み込み、`MODE` や `DB_MODE`、ポート番号などをそのままコマンドへエクスポートします。値を変えたい場合は `.env` を編集するだけで `make dev` などのターゲットに反映されます。
 
 ブラウザで `http://localhost:5173` を開き、Health API の応答が表示されれば準備完了です。`MODE` のデフォルトは `live` ですが、OpenAI API キーが未設定の場合は自動的に `fake` モードとして動作します。API の待受ポートは `.env` の `BACKEND_PORT`（デフォルト 8089）で調整できます。
 

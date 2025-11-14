@@ -7,8 +7,11 @@ from pathlib import Path
 from typing import Iterable, Tuple
 
 import frontmatter
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+try:  # langchain >= 0.1 uses standalone splitters package
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except ModuleNotFoundError:  # pragma: no cover - fallback for older envs
+    from langchain.text_splitter import RecursiveCharacterTextSplitter  # type: ignore
 
 from app.models import ArticleMetadata
 

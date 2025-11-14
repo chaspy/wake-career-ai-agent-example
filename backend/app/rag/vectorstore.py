@@ -45,6 +45,6 @@ def persist_documents(documents: list[Document], persist_dir: Path) -> PersistRe
 def _resolve_embedding():
     settings = get_settings()
     if settings.mode == "live" and settings.openai_api_key:
-        return OpenAIEmbeddings(api_key=settings.openai_api_key)
+        return OpenAIEmbeddings(api_key=settings.openai_api_key, chunk_size=64)
     # FakeEmbeddings は determinisitc でテストや MODE=fake に最適
     return FakeEmbeddings(size=1536)

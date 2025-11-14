@@ -6,12 +6,17 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_BACKEND_DIR = Path(__file__).resolve().parents[1]
+REPO_ROOT = BASE_BACKEND_DIR.parent
 
 
 class Settings(BaseSettings):
     """アプリ全体の環境設定を集中管理する。"""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(BASE_BACKEND_DIR / ".env", REPO_ROOT / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     mode: Literal["fake", "live"] = Field(default="live", alias="MODE")
     db_mode: Literal["sqlite", "json"] = Field(default="sqlite", alias="DB_MODE")
@@ -24,9 +29,8 @@ class Settings(BaseSettings):
     )
     sqlite_path: Path = Field(default=BASE_BACKEND_DIR / "app.db", alias="SQLITE_PATH")
     json_db_dir: Path = Field(default=BASE_BACKEND_DIR / "data/db", alias="JSON_DB_DIR")
-    vectorstore_dir: Path = BASE_BACKEND_DIR / "data/vectorstore"
-    articles_dir: Path = BASE_BACKEND_DIR / "data/wake_articles"
-    vectorstore_dir: Path = Field(default=Path("backend/data/vectorstore"), alias="VECTORSTORE_DIR")
+    articles_dir: Path = Field(default=BASE_BACKEND_DIR / "data/wake_articles", alias="ARTICLES_DIR")
+    vectorstore_dir: Path = Field(default=BASE_BACKEND_DIR / "data/vectorstore", alias="VECTORSTORE_DIR")
     openai_api_key: Optional[str] = Field(default=None, alias="OPENAI_API_KEY")
     gemini_api_key: Optional[str] = Field(default=None, alias="GEMINI_API_KEY")
 
