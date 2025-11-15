@@ -2,12 +2,14 @@ import {
   articleDetailSchema,
   articleSummarySchema,
   healthResponseSchema,
+  jobSearchResponseSchema,
   profileResponseSchema,
   profileSchema,
   recommendationResponseSchema,
   type ArticleDetail,
   type ArticleSummary,
   type HealthResponse,
+  type JobSearchResponse,
   type Profile,
   type ProfileResponse,
   type RecommendationResponse,
@@ -98,4 +100,17 @@ export async function fetchArticle(slug: string): Promise<ArticleDetail> {
   const res = await request(`/api/articles/${slug}`)
   const data = await res.json()
   return articleDetailSchema.parse(data)
+}
+
+export async function searchJobs(params: { query?: string; location?: string; limit?: number }): Promise<JobSearchResponse> {
+  const res = await request('/api/jobs/search', {
+    method: 'POST',
+    body: JSON.stringify({
+      query: params.query ?? undefined,
+      location: params.location ?? undefined,
+      limit: params.limit ?? undefined,
+    }),
+  })
+  const data = await res.json()
+  return jobSearchResponseSchema.parse(data)
 }

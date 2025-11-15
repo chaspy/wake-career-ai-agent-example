@@ -127,3 +127,25 @@ class RecommendationRequest(BaseModel):
 class RecommendationResponse(BaseModel):
     recommendations: list[Recommendation]
     mode: Literal["fake", "live"]
+
+
+class JobSummary(BaseModel):
+    id: str
+    title: str
+    company: Optional[str] = None
+    url: str
+    location: Optional[str] = None
+    published_at: Optional[str] = None
+    snippet: Optional[str] = None
+    source: str
+
+
+class JobSearchRequest(BaseModel):
+    query: Optional[str] = Field(default=None, description="求人検索キーワード")
+    location: Optional[str] = Field(default=None, description="勤務地や地域のキーワード")
+    limit: int = Field(default=6, ge=1, le=12)
+
+
+class JobSearchResponse(BaseModel):
+    jobs: list[JobSummary]
+    sources: list[str]

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import get_settings, get_runtime_mode
 from .db import database
 from .models import HealthResponse
-from .routers import profile, recommend, articles
+from .routers import profile, recommend, articles, jobs
 
 
 def create_app() -> FastAPI:
@@ -22,6 +22,7 @@ def create_app() -> FastAPI:
     application.include_router(profile.router)
     application.include_router(recommend.router)
     application.include_router(articles.router)
+    application.include_router(jobs.router)
 
     @application.on_event("startup")
     async def _ensure_defaults() -> None:

@@ -387,6 +387,61 @@ button.ghost {
   color: inherit;
 }
 
+.job-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.job-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.job-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.job-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.job-card h3 {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.job-company {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.job-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.job-snippet {
+  margin: 0;
+  color: #475569;
+}
+
+.job-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

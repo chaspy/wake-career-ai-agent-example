@@ -69,3 +69,23 @@ export const articleDetailSchema = articleSummarySchema.extend({
 })
 
 export type ArticleDetail = z.infer<typeof articleDetailSchema>
+
+export const jobSummarySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  company: z.string().optional().nullable(),
+  url: z.string().url(),
+  location: z.string().optional().nullable(),
+  published_at: z.string().optional().nullable(),
+  snippet: z.string().optional().nullable(),
+  source: z.string(),
+})
+
+export type JobSummary = z.infer<typeof jobSummarySchema>
+
+export const jobSearchResponseSchema = z.object({
+  jobs: z.array(jobSummarySchema),
+  sources: z.array(z.string()),
+})
+
+export type JobSearchResponse = z.infer<typeof jobSearchResponseSchema>

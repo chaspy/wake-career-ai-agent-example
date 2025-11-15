@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ApiKeyBanner } from '../components/ApiKeyBanner'
 import { ArticleDetail } from '../components/ArticleDetail'
+import { JobList } from '../components/JobList'
 import { Loader } from '../components/Loader'
 import { ProfileForm } from '../components/ProfileForm'
 import { RecoList } from '../components/RecoList'
@@ -10,10 +11,12 @@ import {
   fetchProfile,
   fetchRecommendations,
   saveProfile,
+  searchJobs,
 } from '../lib/api'
 import type {
   ArticleDetail as ArticleDetailType,
   HealthResponse,
+  JobSummary,
   Profile,
   ProfileResponse,
   Recommendation,
@@ -31,11 +34,22 @@ export function Home() {
   const [recoLoading, setRecoLoading] = useState(false)
   const [recoError, setRecoError] = useState<string | null>(null)
 
+  const [jobs, setJobs] = useState<JobSummary[]>([])
+  const [jobsLoading, setJobsLoading] = useState(false)
+  const [jobsError, setJobsError] = useState<string | null>(null)
+  const [jobSources, setJobSources] = useState<string[]>([])
+
   const [query, setQuery] = useState('')
   const [activeArticle, setActiveArticle] = useState<ArticleDetailType | null>(null)
   const [articleLoading, setArticleLoading] = useState(false)
-  const [articleError, setArticleError] = useState<string | null>(null)
+const [articleError, setArticleError] = useState<string | null>(null)
   const recoSectionRef = useRef<HTMLElement | null>(null)
+
+  const buildJobQuery = (profile: Profile | null, fallback: string) => {
+    if (fallback && fallback.trim().length > 0) return fallback.trim()
+    if (!profile) return ''
+    return [profile.target_role, profile.current_role, profile.skills[0], profile.interests[0]].filter(Boolean).join(' ')
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -89,19 +103,31 @@ export function Home() {
   const handleRecommend = async () => {
     setRecoLoading(true)
     setRecoError(null)
+    setJobsLoading(true)
+    setJobsError(null)
     scrollToRecommendations()
     try {
-      const response = await fetchRecommendations({
-        profile: readyProfile ?? undefined,
-        query: query || undefined,
-        top_k: 3,
-      })
-      setRecommendations(response.recommendations)
-      setHealth({ ok: true, mode: response.mode })
+      const jobQuery = buildJobQuery(readyProfile, query)
+      const [recoResponse, jobResponse] = await Promise.all([
+        fetchRecommendations({
+          profile: readyProfile ?? undefined,
+          query: query || undefined,
+          top_k: 3,
+        }),
+        searchJobs({ query: jobQuery || undefined, limit: 6 }).catch((err) => {
+          setJobsError(err instanceof Error ? err.message : '求人取得に失敗しました')
+          return { jobs: [], sources: [] }
+        }),
+      ])
+      setRecommendations(recoResponse.recommendations)
+      setHealth({ ok: true, mode: recoResponse.mode })
+      setJobs(jobResponse.jobs)
+      setJobSources(jobResponse.sources)
     } catch (err) {
       setRecoError(err instanceof Error ? err.message : '推薦の取得に失敗しました')
     } finally {
       setRecoLoading(false)
+      setJobsLoading(false)
     }
   }
 
@@ -178,6 +204,17 @@ export function Home() {
         </div>
         {recoLoading && <Loader />}
         <RecoList items={recommendations} onOpenArticle={handleOpenArticle} />
+      </section>
+
+      <section className="card job-section">
+        <div className="reco-header">
+          <h2>おすすめ求人</h2>
+          <p className="muted">公開求人フィード（Wantedly, Remotive など）から自動抽出しています。</p>
+        </div>
+        {jobsLoading && <Loader />}
+        {jobsError && <p className="status error">{jobsError}</p>}
+        <JobList items={jobs} />
+        {jobSources.length > 0 && <p className="muted">取得元: {jobSources.join(', ')}</p>}
       </section>
 
       {articleLoading && !activeArticle && <Loader />}
