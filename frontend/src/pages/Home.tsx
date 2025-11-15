@@ -16,6 +16,7 @@ import {
 import type {
   ArticleDetail as ArticleDetailType,
   HealthResponse,
+  JobSearchResponse,
   JobSummary,
   Profile,
   ProfileResponse,
@@ -38,18 +39,13 @@ export function Home() {
   const [jobsLoading, setJobsLoading] = useState(false)
   const [jobsError, setJobsError] = useState<string | null>(null)
   const [jobSources, setJobSources] = useState<string[]>([])
+  const [jobQueries, setJobQueries] = useState<string[]>([])
 
   const [query, setQuery] = useState('')
   const [activeArticle, setActiveArticle] = useState<ArticleDetailType | null>(null)
   const [articleLoading, setArticleLoading] = useState(false)
 const [articleError, setArticleError] = useState<string | null>(null)
   const recoSectionRef = useRef<HTMLElement | null>(null)
-
-  const buildJobQuery = (profile: Profile | null, fallback: string) => {
-    if (fallback && fallback.trim().length > 0) return fallback.trim()
-    if (!profile) return ''
-    return [profile.target_role, profile.current_role, profile.skills[0], profile.interests[0]].filter(Boolean).join(' ')
-  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -107,22 +103,23 @@ const [articleError, setArticleError] = useState<string | null>(null)
     setJobsError(null)
     scrollToRecommendations()
     try {
-      const jobQuery = buildJobQuery(readyProfile, query)
-      const [recoResponse, jobResponse] = await Promise.all([
-        fetchRecommendations({
-          profile: readyProfile ?? undefined,
-          query: query || undefined,
-          top_k: 3,
-        }),
-        searchJobs({ query: jobQuery || undefined, limit: 6 }).catch((err) => {
-          setJobsError(err instanceof Error ? err.message : '求人取得に失敗しました')
-          return { jobs: [], sources: [] }
-        }),
-      ])
+      let jobResponse: JobSearchResponse
+      try {
+        jobResponse = await searchJobs({ profile: readyProfile ?? undefined, query: query || undefined, limit: 6 })
+      } catch (err) {
+        setJobsError(err instanceof Error ? err.message : '求人取得に失敗しました')
+        jobResponse = { jobs: [], sources: [], queries: [] }
+      }
+      const recoResponse = await fetchRecommendations({
+        profile: readyProfile ?? undefined,
+        query: query || undefined,
+        top_k: 3,
+      })
       setRecommendations(recoResponse.recommendations)
       setHealth({ ok: true, mode: recoResponse.mode })
       setJobs(jobResponse.jobs)
       setJobSources(jobResponse.sources)
+      setJobQueries(jobResponse.queries ?? [])
     } catch (err) {
       setRecoError(err instanceof Error ? err.message : '推薦の取得に失敗しました')
     } finally {
@@ -215,6 +212,7 @@ const [articleError, setArticleError] = useState<string | null>(null)
         {jobsError && <p className="status error">{jobsError}</p>}
         <JobList items={jobs} />
         {jobSources.length > 0 && <p className="muted">取得元: {jobSources.join(', ')}</p>}
+        {jobQueries.length > 0 && <p className="muted">試行クエリ: {jobQueries.join(' → ')}</p>}
       </section>
 
       {articleLoading && !activeArticle && <Loader />}

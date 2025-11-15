@@ -141,6 +141,7 @@ class JobSummary(BaseModel):
 
 
 class JobSearchRequest(BaseModel):
+    profile: Optional[Profile] = None
     query: Optional[str] = Field(default=None, description="求人検索キーワード")
     location: Optional[str] = Field(default=None, description="勤務地や地域のキーワード")
     limit: int = Field(default=6, ge=1, le=12)
@@ -149,3 +150,4 @@ class JobSearchRequest(BaseModel):
 class JobSearchResponse(BaseModel):
     jobs: list[JobSummary]
     sources: list[str]
+    queries: list[str] = Field(default_factory=list)

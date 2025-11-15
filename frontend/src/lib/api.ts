@@ -102,10 +102,16 @@ export async function fetchArticle(slug: string): Promise<ArticleDetail> {
   return articleDetailSchema.parse(data)
 }
 
-export async function searchJobs(params: { query?: string; location?: string; limit?: number }): Promise<JobSearchResponse> {
+export async function searchJobs(params: {
+  profile?: Profile | null
+  query?: string
+  location?: string
+  limit?: number
+}): Promise<JobSearchResponse> {
   const res = await request('/api/jobs/search', {
     method: 'POST',
     body: JSON.stringify({
+      profile: params.profile ?? undefined,
       query: params.query ?? undefined,
       location: params.location ?? undefined,
       limit: params.limit ?? undefined,

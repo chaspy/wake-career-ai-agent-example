@@ -86,6 +86,7 @@ export type JobSummary = z.infer<typeof jobSummarySchema>
 export const jobSearchResponseSchema = z.object({
   jobs: z.array(jobSummarySchema),
   sources: z.array(z.string()),
+  queries: z.array(z.string()).default([]),
 })
 
 export type JobSearchResponse = z.infer<typeof jobSearchResponseSchema>
