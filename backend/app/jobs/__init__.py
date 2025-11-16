@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Iterable, List, Optional
 from urllib.parse import urlencode
 
@@ -20,6 +20,7 @@ from app.models import JobSummary, Profile
 
 WANTEDLY_URL = "https://www.wantedly.com/projects"
 REMOTIVE_URL = "https://remotive.com/api/remote-jobs"
+FETCH_TIMEOUT = 8  # seconds, keep UI responsive
 MAX_JOB_ITERATIONS = 3
 
 
@@ -104,22 +105,33 @@ def _fetch_jobs(query: Optional[str], location: Optional[str], limit: int) -> li
         unique.append(job)
         if len(unique) >= limit:
             break
+    if len(unique) < limit:
+        for job in aggregated:
+            if job.url in seen:
+                continue
+            seen.add(job.url)
+            unique.append(job)
+            if len(unique) >= limit:
+                break
     return unique
 
 
 def _job_sort_key(job: JobSummary):
     if job.published_at:
         try:
-            return datetime.fromisoformat(job.published_at.replace("Z", "+00:00"))
+            return datetime.fromisoformat(job.published_at.replace("Z", "+00:00")).astimezone(timezone.utc)
         except ValueError:
-            return datetime.min
-    return datetime.min
+            return datetime.min.replace(tzinfo=timezone.utc)
+    return datetime.min.replace(tzinfo=timezone.utc)
 
 
 def _matches_keyword(job: JobSummary, query: str) -> bool:
     text = " ".join(filter(None, [job.title, job.company, job.snippet or ""])).lower()
     tokens = [token.lower() for token in query.split() if token]
-    return any(token in text for token in tokens) if tokens else True
+    if not tokens:
+        return True
+    hits = sum(1 for token in tokens if token in text)
+    return hits >= 1
 
 
 def _evaluate_jobs(profile: Profile, query: str, jobs: list[JobSummary]) -> JobEvaluationResponse:
@@ -211,7 +223,7 @@ def _fetch_wantedly(query: Optional[str], location: Optional[str], limit: int) -
     search_terms = " ".join(part for part in [query, location] if part)
     if search_terms:
         params["keyword"] = search_terms
-    resp = requests.get(WANTEDLY_URL, params=params, timeout=15)
+    resp = requests.get(WANTEDLY_URL, params=params, timeout=FETCH_TIMEOUT)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
     jobs: list[JobSummary] = []
@@ -260,7 +272,7 @@ def _fetch_remotive(query: Optional[str], location: Optional[str], limit: int) -
         params["search"] = query
     if location:
         params["location"] = location
-    resp = requests.get(REMOTIVE_URL, params=params, timeout=15)
+    resp = requests.get(REMOTIVE_URL, params=params, timeout=FETCH_TIMEOUT)
     resp.raise_for_status()
     payload = resp.json()
     jobs_data = payload.get("jobs", [])
@@ -294,6 +306,10 @@ def _normalize_datetime(value: Optional[str]) -> Optional[str]:
         return None
     try:
         dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
     except ValueError:
         return None
     return dt.isoformat()

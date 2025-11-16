@@ -114,7 +114,7 @@ export async function searchJobs(params: {
       profile: params.profile ?? undefined,
       query: params.query ?? undefined,
       location: params.location ?? undefined,
-      limit: params.limit ?? undefined,
+      limit: params.limit ?? 10,
     }),
   })
   const data = await res.json()

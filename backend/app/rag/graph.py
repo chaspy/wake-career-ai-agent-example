@@ -38,7 +38,15 @@ class GraphState(TypedDict, total=False):
 
 class LLMRecommendation(BaseModel):
     slug: str = Field(..., description="引用する記事の slug")
-    reason: str = Field(..., description="推薦理由")
+    reasons: list[str] = Field(
+        ...,
+        min_length=3,
+        max_length=3,
+        description=(
+            "推薦理由を3つの異なる観点で。"
+            "例: スキル適合・実務応用・キャリア成果など。各 70-120 文字で具体的に書くこと。"
+        ),
+    )
 
 
 class LLMResponse(BaseModel):
@@ -135,7 +143,7 @@ def _run_live_model(
     profile_text = _format_profile(profile)
     context = "\n\n".join(
         [
-            f"slug: {doc.metadata.get('slug')}\ntitle: {doc.metadata.get('title')}\nurl: {doc.metadata.get('source_url')}\nexcerpt: {doc.page_content[:500]}"
+            f"slug: {doc.metadata.get('slug')}\ntitle: {doc.metadata.get('title')}\nurl: {doc.metadata.get('source_url')}\nexcerpt: {doc.page_content[:900]}"
             for doc in documents[:top_k]
         ]
     )
@@ -149,6 +157,9 @@ def _run_live_model(
                 "human",
                 "プロフィール: {profile}\n検索クエリ: {query}\n候補記事:\n{context}\n\n"
                 "上記コンテキストのみを使い、最大 {top_k} 件の推薦を JSON で返してください。"
+                "各 recommendation で reasons を3つ返してください。"
+                "それぞれ異なる観点（例: スキルフィット / 実務での活かし方 / 想定成果やリスク）で 70-120 文字ずつ。"
+                "記事の具体的な内容とプロフィール/クエリを必ず結びつけてください。"
                 "出力は {format_instructions} に従ってください。",
             ),
         ]
@@ -179,8 +190,8 @@ def _run_live_model(
                 "slug": doc.metadata.get("slug", f"doc-{rank}"),
                 "title": doc.metadata.get("title", "WAKE Article"),
                 "url": doc.metadata.get("source_url", ""),
-                "excerpt": doc.page_content.strip()[:220],
-                "reasons": [item.reason],
+                "excerpt": doc.page_content.strip()[:360],
+                "reasons": item.reasons,
                 "citations": [
                     {
                         "source_url": doc.metadata.get("source_url", ""),

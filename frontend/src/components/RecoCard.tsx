@@ -18,15 +18,22 @@ export function RecoCard({ item, onOpenArticle }: RecoCardProps) {
         <span className="score-pill">score {item.score.toFixed(2)}</span>
       </header>
       <div className="reco-body">
-        <p className="excerpt">{item.excerpt}</p>
+        <div className="reco-preview">
+          <p className="muted">プレビュー</p>
+          <p className="excerpt">{item.excerpt}</p>
+        </div>
+
         {item.reasons.length > 0 && (
           <div className="reason-block">
             <span className="section-label">おすすめ理由</span>
-            <ul className="reasons">
-              {item.reasons.map((reason) => (
-                <li key={reason}>{reason}</li>
+            <div className="reason-list">
+              {item.reasons.map((reason, idx) => (
+                <div className="reason-chip" key={`${reason}-${idx}`}>
+                  <span className="bullet">{idx + 1}</span>
+                  <p>{reason}</p>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
         {item.citations.length > 0 && (
