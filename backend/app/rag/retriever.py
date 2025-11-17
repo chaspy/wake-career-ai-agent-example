@@ -48,6 +48,11 @@ def _load_vectorstore():
 
 def _resolve_embedding():
     settings = get_settings()
+    # Groq など OpenAI 互換でも埋め込みを提供しない場合があるため、
+    # base_url に groq を含むときはフェイクにフォールバックする。
     if settings.mode == "live" and settings.openai_api_key:
-        return OpenAIEmbeddings(api_key=settings.openai_api_key)
+        base = (settings.openai_base_url or "").lower()
+        if "groq" in base:
+            return FakeEmbeddings(size=1536)
+        return OpenAIEmbeddings(api_key=settings.openai_api_key, base_url=settings.openai_base_url)
     return FakeEmbeddings(size=1536)
