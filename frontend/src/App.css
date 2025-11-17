@@ -675,6 +675,23 @@ button.ghost {
   opacity: 0.7;
 }
 
+.agent-log {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed #cbd5f5;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.agent-log ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  color: #0f172a;
+  line-height: 1.4;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
 .plan-section {
   display: flex;
   flex-direction: column;

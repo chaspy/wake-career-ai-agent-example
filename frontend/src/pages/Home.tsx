@@ -54,6 +54,7 @@ export function Home() {
   const [jobQueries, setJobQueries] = useState<string[]>([])
   const [jobStage, setJobStage] = useState<'idle' | 'plan' | 'crawl' | 'rank' | 'done' | 'error'>('idle')
   const [planReport, setPlanReport] = useState<PlanReport | null>(null)
+  const [activityLogs, setActivityLogs] = useState<string[]>([])
 
   const [query, setQuery] = useState('')
   const [activeArticle, setActiveArticle] = useState<ArticleDetailType | null>(null)
@@ -179,6 +180,11 @@ const [articleError, setArticleError] = useState<string | null>(null)
     return { profileInsights, careerOptions, learning, actions, selfCheck }
   }
 
+  const logActivity = (message: string) => {
+    const ts = new Date().toLocaleTimeString('ja-JP', { hour12: false })
+    setActivityLogs((prev) => [`${ts} ${message}`, ...prev].slice(0, 40))
+  }
+
   const handleRecommend = async () => {
     setRecoLoading(true)
     setRecoError(null)
@@ -189,31 +195,40 @@ const [articleError, setArticleError] = useState<string | null>(null)
     setPlannerStage('idle')
     setPlannerError(null)
     setPlanReport(null)
+    setActivityLogs([])
+    logActivity('リクエスト開始: プロフィールとクエリを集約')
     const seedQuery = (query || '').trim() || 'プロフィールベース'
     setJobQueries(seedQuery ? [seedQuery] : [])
+    logActivity(`求人初回クエリを設定: "${seedQuery || '（空）'}"`)
     scrollToRecommendations()
     try {
       await sleep(120)
       setRecoStage('crawl')
+      logActivity('推薦: ベクトル検索開始')
       setJobStage('crawl')
+      logActivity('求人: フィード取得開始')
       let jobResponse: JobSearchResponse
       try {
         jobResponse = await searchJobs({ profile: readyProfile ?? undefined, query: query || undefined, limit: 10 })
         await sleep(120)
         setJobStage('rank')
+        logActivity(`求人: スコアリング開始 (${jobResponse.jobs.length} 件取得)`)
       } catch (err) {
         setJobStage('error')
         setJobsError(err instanceof Error ? err.message : '求人取得に失敗しました')
+        logActivity(`求人エラー: ${(err as Error)?.message ?? '不明なエラー'}`)
         jobResponse = { jobs: [], sources: [], queries: [] }
       }
       await sleep(120)
       setRecoStage('rank')
+      logActivity('推薦: スコアリング/引用整形中')
       const recoResponse = await fetchRecommendations({
         profile: readyProfile ?? undefined,
         query: query || undefined,
         top_k: 3,
       })
       setRecoStage('done')
+      logActivity(`推薦: 完了 (${recoResponse.recommendations.length} 件)`)
       setRecommendations(recoResponse.recommendations)
       setHealth({ ok: true, mode: recoResponse.mode })
       setJobs(jobResponse.jobs)
@@ -221,23 +236,29 @@ const [articleError, setArticleError] = useState<string | null>(null)
       setJobQueries(jobResponse.queries ?? [])
       if (jobStage !== 'error') {
         setJobStage('done')
+        logActivity('求人: 完了')
       }
 
       // Planner agent
       setPlannerStage('plan')
+      logActivity('プランニング: プロファイル/推薦/求人を読み込み')
       await sleep(80)
       const report = buildPlanReport(recoResponse.recommendations, readyProfile)
       setPlannerStage('synthesize')
+      logActivity('プランニング: 要約と優先順位付け中')
       await sleep(120)
       setPlanReport(report)
       setPlannerStage('validate')
+      logActivity('プランニング: 自己検証チェックを追加中')
       await sleep(120)
       setPlannerStage('done')
+      logActivity('プランニング: 完了、プランボード更新')
     } catch (err) {
       setRecoStage('error')
       setRecoError(err instanceof Error ? err.message : '推薦の取得に失敗しました')
       setPlannerStage('error')
       setPlannerError(err instanceof Error ? err.message : 'プラン生成に失敗しました')
+      logActivity(`推薦/プランニングでエラー: ${(err as Error)?.message ?? '不明なエラー'}`)
     } finally {
       setRecoLoading(false)
       setJobsLoading(false)
@@ -318,6 +339,8 @@ const [articleError, setArticleError] = useState<string | null>(null)
         jobError={jobsError}
         recoError={recoError}
         plannerError={plannerError}
+        logs={activityLogs}
+        provider={health?.provider}
       />
 
       <section className="card reco-section" ref={recoSectionRef}>

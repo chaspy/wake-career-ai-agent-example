@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import get_settings, get_runtime_mode
+from .config import get_settings, get_runtime_mode, get_llm_provider
 from .db import database
 from .models import HealthResponse
 from .routers import profile, recommend, articles, jobs
@@ -30,7 +30,7 @@ def create_app() -> FastAPI:
 
     @application.get("/api/health", response_model=HealthResponse)
     async def health_check() -> HealthResponse:
-        return HealthResponse(ok=True, mode=get_runtime_mode())
+        return HealthResponse(ok=True, mode=get_runtime_mode(), provider=get_llm_provider())
 
     return application
 

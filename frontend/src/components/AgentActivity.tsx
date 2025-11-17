@@ -8,6 +8,8 @@ type Props = {
   jobError: string | null
   recoError: string | null
   plannerError: string | null
+  logs: string[]
+  provider?: string | null
 }
 
 export const AgentActivity: FC<Props> = ({
@@ -18,6 +20,8 @@ export const AgentActivity: FC<Props> = ({
   jobError,
   recoError,
   plannerError,
+  logs,
+  provider,
 }) => {
   const statusDot = (state: 'active' | 'error' | 'done' | 'idle') => `dot ${state}`
 
@@ -40,7 +44,10 @@ export const AgentActivity: FC<Props> = ({
       <div className="agent-header">
         <p className="eyebrow small">AI Agent Activity</p>
         <h3>エージェントの動き</h3>
-        <p className="muted">推薦・求人探索・プランニングの進捗をリアルタイム表示します。</p>
+        <p className="muted">
+          推薦・求人探索・プランニングの進捗をリアルタイム表示します。
+          {provider ? ` Provider: ${provider}` : null}
+        </p>
       </div>
 
       <div className="agent-grid">
@@ -128,6 +135,19 @@ export const AgentActivity: FC<Props> = ({
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="agent-log">
+        <p className="section-label">詳細ログ（新しい順）</p>
+        {logs.length === 0 ? (
+          <p className="muted">まだログはありません。「おすすめを取得」で実行ログが表示されます。</p>
+        ) : (
+          <ol>
+            {logs.map((entry, idx) => (
+              <li key={`${entry}-${idx}`}>{entry}</li>
+            ))}
+          </ol>
+        )}
       </div>
     </section>
   )

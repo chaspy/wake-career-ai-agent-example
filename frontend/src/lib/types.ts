@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const healthResponseSchema = z.object({
   ok: z.boolean(),
   mode: z.enum(['fake', 'live']),
+  provider: z.string().optional(),
 })
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>

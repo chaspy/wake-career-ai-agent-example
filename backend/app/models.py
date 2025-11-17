@@ -64,6 +64,7 @@ class ArticleIndexRecord(Base):
 class HealthResponse(BaseModel):
     ok: bool = Field(default=True, description="APIが稼働しているかどうか")
     mode: Literal["fake", "live"] = Field(default="fake", description="推論モード")
+    provider: Optional[str] = Field(default=None, description="利用中のLLMプロバイダー（例: OpenAI, Groq）")
 
 
 class Profile(BaseModel):
