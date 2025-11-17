@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     vectorstore_dir: Path = Field(default=BASE_BACKEND_DIR / "data/vectorstore", alias="VECTORSTORE_DIR")
     openai_api_key: Optional[str] = Field(default=None, alias="OPENAI_API_KEY")
     openai_base_url: Optional[str] = Field(default=None, alias="OPENAI_BASE_URL")
+    openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
     gemini_api_key: Optional[str] = Field(default=None, alias="GEMINI_API_KEY")
 
 

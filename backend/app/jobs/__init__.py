@@ -138,7 +138,7 @@ def _evaluate_jobs(profile: Profile, query: str, jobs: list[JobSummary]) -> JobE
     settings = get_settings()
     if settings.mode == "live" and settings.openai_api_key:
         llm = ChatOpenAI(
-            model="gpt-4o-mini",
+            model=settings.openai_model,
             temperature=0,
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,

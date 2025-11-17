@@ -139,7 +139,7 @@ def _run_live_model(
     if not settings.openai_api_key:
         return []
     llm = ChatOpenAI(
-        model="gpt-4o-mini",
+        model=settings.openai_model,
         temperature=0.2,
         api_key=settings.openai_api_key,
         base_url=settings.openai_base_url,
