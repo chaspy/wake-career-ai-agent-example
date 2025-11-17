@@ -141,7 +141,6 @@ def _evaluate_jobs(profile: Profile, query: str, jobs: list[JobSummary]) -> JobE
             model=settings.openai_model,
             temperature=0,
             api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
         )
         parser = PydanticOutputParser(pydantic_object=JobEvaluationResponse)
         job_text = "\n".join(

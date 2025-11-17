@@ -30,7 +30,7 @@ def create_app() -> FastAPI:
 
     @application.get("/api/health", response_model=HealthResponse)
     async def health_check() -> HealthResponse:
-        return HealthResponse(ok=True, mode=get_runtime_mode(), provider=get_llm_provider())
+        return HealthResponse(ok=True, mode=get_runtime_mode(), provider="OpenAI")
 
     return application
 

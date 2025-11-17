@@ -142,7 +142,6 @@ def _run_live_model(
         model=settings.openai_model,
         temperature=0.2,
         api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
     )
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
     profile_text = _format_profile(profile)
