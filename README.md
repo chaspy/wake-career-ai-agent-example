@@ -48,6 +48,15 @@
 
 当日: `make dev` を実行し、ブラウザで http://localhost:5173 を開くだけで体験できます。OpenAI キーありの参加者は `.env` にキーを入れて live 推論、無い参加者は fake モードで UI 体験が可能です。
 
+## フェーズ別の起動ポート
+- 01_bootstrap: backend 18089 / frontend 15073
+- 02_profile_api: backend 28089 / frontend 25073
+- 03_articles_ingest: backend 38089 / frontend 35073
+- 04_recommend_rag: backend 48089 / frontend 45073
+- 05_jobs_and_planning: backend 8089 / frontend 5173（完成版）
+
+※ それぞれ `make dev` で立ち上がります。複数フェーズを同時に起動する場合もポート衝突しません。
+
 ## 現状の開発フロー (Step 0)
 
 ```bash
