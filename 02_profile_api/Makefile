@@ -5,7 +5,9 @@ FRONTEND_PORT?=25073
 
 .PHONY: dev backend frontend
 
-dev: backend frontend
+dev:
+	$(MAKE) backend &
+	cd $(FRONTEND_DIR) && npm install && PORT=$(FRONTEND_PORT) npm run dev
 
 backend:
 	cd $(BACKEND_DIR) && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port $(BACKEND_PORT)

@@ -12,6 +12,11 @@ class PingResponse(BaseModel):
     reply: str
     mode: str
 
+@app.get("/")
+def root():
+    return {"ok": True, "message": "01_bootstrap backend"}
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True}
@@ -25,4 +30,3 @@ def ping_llm(payload: PingRequest):
     llm = ChatOpenAI(model=model, api_key=api_key, temperature=0)
     out = llm.invoke([{"role":"user","content": payload.prompt}])
     return PingResponse(reply=str(out.content), mode="live")
-
