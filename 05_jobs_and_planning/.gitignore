@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+*.db-journal
+venv/
+.venv/
+
+dist/
+build/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Env
+.env
+.env.*
+!.env.sample
+
+# Data artifacts
+backend/data/vectorstore/
+backend/data/db/
+backend/data/wake_articles/*
+!backend/data/wake_articles/*.md
+!backend/data/wake_articles/README.md
+backend/app.db
+
+# macOS
+.DS_Store
