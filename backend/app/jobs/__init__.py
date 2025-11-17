@@ -137,7 +137,12 @@ def _matches_keyword(job: JobSummary, query: str) -> bool:
 def _evaluate_jobs(profile: Profile, query: str, jobs: list[JobSummary]) -> JobEvaluationResponse:
     settings = get_settings()
     if settings.mode == "live" and settings.openai_api_key:
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=settings.openai_api_key)
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=0,
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_base_url,
+        )
         parser = PydanticOutputParser(pydantic_object=JobEvaluationResponse)
         job_text = "\n".join(
             f"id: {job.id}\ntitle: {job.title}\ncompany: {job.company}\nlocation: {job.location}\nsummary: {job.snippet}" for job in jobs

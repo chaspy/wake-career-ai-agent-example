@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     articles_dir: Path = Field(default=BASE_BACKEND_DIR / "data/wake_articles", alias="ARTICLES_DIR")
     vectorstore_dir: Path = Field(default=BASE_BACKEND_DIR / "data/vectorstore", alias="VECTORSTORE_DIR")
     openai_api_key: Optional[str] = Field(default=None, alias="OPENAI_API_KEY")
+    openai_base_url: Optional[str] = Field(default=None, alias="OPENAI_BASE_URL")
     gemini_api_key: Optional[str] = Field(default=None, alias="GEMINI_API_KEY")
 
 

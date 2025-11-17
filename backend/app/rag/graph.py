@@ -138,7 +138,12 @@ def _run_live_model(
     settings = get_settings()
     if not settings.openai_api_key:
         return []
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2, api_key=settings.openai_api_key)
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0.2,
+        api_key=settings.openai_api_key,
+        base_url=settings.openai_base_url,
+    )
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
     profile_text = _format_profile(profile)
     context = "\n\n".join(
