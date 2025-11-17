@@ -8,6 +8,46 @@
 - Node.js 20 以上 / npm 10 以上
 - make
 
+## ハンズオン参加者向け 事前準備チェックリスト（15–20分）
+
+1. Git と Node.js をインストール
+   - Git: https://git-scm.com/downloads
+   - Node.js: v20 以上（https://nodejs.org/）
+   - 動作確認: `git --version` / `node -v` / `npm -v`
+
+2. Python と uv を準備
+   - Python 3.11 以上を用意（3.12 でも可）
+   - uv インストール: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+   - 確認: `uv --version`
+
+3. リポジトリ取得
+   ```bash
+   git clone https://github.com/chaspy/wake-career-ai-agent-example.git
+   cd wake-career-ai-agent-example
+   ```
+
+4. 環境ファイルを用意
+   ```bash
+   cp .env.sample .env
+   # .env を開き、OPENAI_API_KEY=sk-... を記入（キーが無い場合は空でOK）
+   # MODE は live のままで可。キー未設定なら自動で fake モードになります。
+   ```
+
+5. 依存インストール
+   ```bash
+   make install
+   ```
+   - backend の仮想環境（`backend/.venv`）と frontend の npm 依存をまとめて導入します。
+
+6. 動作確認（余裕があれば）
+   ```bash
+   MODE=fake make dev
+   # ブラウザで http://localhost:5173 を開き、Health が "fake" で OK 表示になることを確認
+   # Ctrl+C で終了
+   ```
+
+当日: `make dev` を実行し、ブラウザで http://localhost:5173 を開くだけで体験できます。OpenAI キーありの参加者は `.env` にキーを入れて live 推論、無い参加者は fake モードで UI 体験が可能です。
+
 ## 現状の開発フロー (Step 0)
 
 ```bash
