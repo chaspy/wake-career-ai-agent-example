@@ -13,6 +13,17 @@ FastAPI + Vite の最小スキャフォールド。健康チェックと LLM 疎
 - backend: `app/main.py` だけのシンプル構成。`ChatOpenAI` をキー有無で切り替え。
 - frontend: ほぼ静的。ヘルスと ping の結果を表示する最小 UI。
 
+### LangChain を使う箇所（抜粋）
+- `backend/app/main.py` の `/api/ping-llm` で ChatOpenAI を直呼びしています。API キーが無いときはダミー応答を返すフェイルセーフ付き。
+
+```python
+# backend/app/main.py
+llm = ChatOpenAI(model=model, api_key=api_key, temperature=0)
+out = llm.invoke([{"role": "user", "content": payload.prompt}])
+return PingResponse(reply=str(out.content), mode="live")
+```
+
+
 ## 起動手順（最短）
 ```bash
 cd 01_bootstrap
