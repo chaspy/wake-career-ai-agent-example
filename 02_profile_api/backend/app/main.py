@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -40,6 +41,8 @@ DEFAULT_PROFILE = Profile(
     interests=["WAKE Articles", "1on1", "RAG"],
     notes="初期状態のサンプルプロフィールです。",
 )
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="02_profile_api")
 
@@ -128,8 +131,13 @@ def get_profile_advice(payload: AdviceRequest):
     messages = _build_prompt(profile, payload.question)
     api_key = os.getenv("OPENAI_API_KEY")
     if api_key:
-        answer = _call_openai(messages)
-        provider = "openai"
+        try:
+            answer = _call_openai(messages)
+            provider = "openai"
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("OpenAI呼び出しに失敗したためフォールバックします: %s", exc)
+            answer = _fake_answer(profile, payload.question)
+            provider = "fake"
     else:
         answer = _fake_answer(profile, payload.question)
         provider = "fake"
