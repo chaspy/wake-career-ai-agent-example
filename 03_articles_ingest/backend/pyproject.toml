@@ -1,10 +1,16 @@
 [project]
 name = "wake-career-03-backend"
-version = "0.0.0"
+version = "0.3.0"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi",
   "uvicorn",
+  "langchain",
+  "langchain-community",
+  "langchain-openai",
+  "faiss-cpu",
+  "python-frontmatter",
+  "PyYAML",
 ]
 
 [tool.uv]
