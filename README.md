@@ -17,6 +17,33 @@
 - 01_bootstrap からはじめて、少しずつ実装を進めるのも良いでしょう。ディレクトリを切り替えて、動作確認しながら、コードの diff を見るのも良いでしょう。
 - もちろんあなただけのオリジナルの AI Agent を作るのも構いません
 
+### LangChain / LangGraph を使っている箇所（抜粋）
+
+- RAG 推薦グラフ: `backend/app/rag/graph.py`
+  - LangGraph の `StateGraph` で `build_query → retrieve → call_model → respond` を組み、LLM 呼び出しは LangChain チェーンで構築。
+  - ChatOpenAI + ChatPromptTemplate + PydanticOutputParser をパイプ演算子でつないで JSON 生成を強制。
+
+```python
+# backend/app/rag/graph.py
+llm = ChatOpenAI(model=settings.openai_model, temperature=0.2, api_key=settings.openai_api_key)
+parser = PydanticOutputParser(pydantic_object=LLMResponse)
+prompt = ChatPromptTemplate.from_messages([...])
+chain = prompt | llm | parser
+llm_response = chain.invoke({"profile": profile_text, "query": query, "context": context, "top_k": top_k,
+                             "format_instructions": parser.get_format_instructions()})
+```
+
+- ベクトル検索リトリーバ: `backend/app/rag/retriever.py`
+  - FAISS/Chroma をロードし、LangChain Retriever として返却。
+
+```python
+# backend/app/rag/retriever.py
+store = _load_vectorstore()
+return store.as_retriever(search_kwargs={"k": k})
+```
+
+- 求人要約/スコアリング: `backend/app/jobs/__init__.py` 内で ChatOpenAI を使い、検索結果を要約・ソートするユーティリティを定義。
+
 ## Setup
 
 ## QuickStart
@@ -36,7 +63,7 @@ make dev   # backend:8089 / frontend:5173
 
 - Git: macOS は多くの環境で標準。無ければ `xcode-select --install` または https://git-scm.com/downloads からインストール。
   - 確認: `git --version`
-- Python 3.11 以上: 
+- Python 3.11 以上:
   - macOS (Homebrew): `brew install python@3.12`
   - Windows: https://www.python.org/downloads/ で 3.11+ を入れ、「Add Python to PATH」をオン。
   - 確認: `python3 --version`
@@ -53,29 +80,7 @@ make dev   # backend:8089 / frontend:5173
   - Windows: WSL や Git Bash で利用するか `choco install make`
   - 確認: `make -v`
 
-1. ツール確認: `git --version` / `node -v` / `npm -v` / `python3 --version` / `uv --version`
-2. リポジトリ取得:
-   ```bash
-   git clone https://github.com/chaspy/wake-career-ai-agent-example.git
-   cd wake-career-ai-agent-example
-   ```
-3. 環境ファイルを用意:
-   ```bash
-   cp .env.sample .env
-   # OpenAI キーがあれば OPENAI_API_KEY=sk-... を記入。無ければ空欄でOK（fakeモード）。
-   ```
-4. 依存インストール:
-   ```bash
-   cd backend && uv sync && cd ..
-   cd frontend && npm install && cd ..
-   ```
-5. 起動:
-   ```bash
-   MODE=fake make dev
-   ```
-   - ブラウザ: http://localhost:5173
-   - Health が `fake` と出れば OK。live にしたいときは `.env` にキーを入れて再起動。
-6. 停止: ターミナルで `Ctrl+C`。
+インストールが終われば Quick Start の手順で動作確認してください。
 
 ## Trouble Shooting
 
