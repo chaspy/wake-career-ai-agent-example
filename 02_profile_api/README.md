@@ -16,18 +16,71 @@
 
 ### コードレベルの差分（ファイル別に一つずつ）
 - `backend/app/main.py`
-  - `/api/ping-llm` を削除し、`/api/profile` GET/PUT で JSON 永続化（64-66 行付近）。未保存時は `DEFAULT_PROFILE` を自動生成（33-42 行）。
-  - 新規 `/api/profile/advice` エンドポイント（119-130 行）。プロフィールをプロンプト化する `_build_prompt`、OpenAI 呼び出し `_call_openai`、キー未設定時のフェイク応答 `_fake_answer` を追加。
-  - 依存を `openai` SDK に変更し、LangChain への依存を排除。
+  ```diff
+  -@app.post("/api/ping-llm")
+  -def ping_llm(...):
+  -    llm = ChatOpenAI(...)
+  -    out = llm.invoke([{"role":"user","content": payload.prompt}])
+  -    return {"reply": out.content}
+  +@app.get("/api/profile")
+  +def get_profile():
+  +    return _load_or_create_profile()
+  +
+  +@app.put("/api/profile")
+  +def upsert_profile(...):
+  +    DATA_FILE.write_text(...)
+  +
+  +@app.post("/api/profile/advice")
+  +def get_profile_advice(payload):
+  +    profile = _load_or_create_profile()
+  +    messages = [
+  +      SystemMessage(...プロンプト...),
+  +      HumanMessage(...プロフィール要約 + 質問...),
+  +    ]
+  +    llm = ChatOpenAI(model=..., api_key=...)
+  +    return {"provider": "openai", "answer": llm.invoke(messages).content}
+  ```
+  - LLM 呼び出しは LangChain/ChatOpenAI 継続だが、自由入力 → プロフィール埋め込み型に変化。
+  - `DEFAULT_PROFILE` を追加し、未保存でも初回アクセスで自動生成。
+
 - `backend/pyproject.toml` / `backend/requirements.txt` / `backend/uv.lock`
-  - 依存に `langchain-openai` を追加（01 も同ライブラリだが、02 はプロフィール向けプロンプト整形ヘルパとフェイク応答を含む構成に変化）。
+  ```diff
+  -openai
+  +langchain-openai
+  ```
+  - 02 では LangChain を維持しつつ、プロフィール文脈組み立てとフェイク回答ロジックを追加。
+
 - `frontend/src/main.tsx`
-  - 01 の「LLM に送る」フォームを撤去し、プロフィール入力フォームと保存・再読み込み、アドバイス取得ボタンを実装。
-  - `askAdvice` 関数で `/api/profile/advice` を呼び、provider 表示と回答を `<pre>` に描画する処理を追加（144-173 行）。
+  ```diff
+  - const [prompt, setPrompt] = useState(...)
+  - <textarea ... onChange={setPrompt} />
+  - <button onClick={handlePing}>LLM に送る</button>
+  + const [form, setForm] = useState<Profile>({...})
+  + const [question, setQuestion] = useState('次に身につけた方が良いスキルは？')
+  + const [advice, setAdvice] = useState(null)
+  + await fetch('/api/profile', { method: 'PUT', body: form })
+  + await fetch('/api/profile/advice', { method: 'POST', body: { question } })
+  + <pre>{advice?.answer}</pre>
+  ```
+  - LLM 直叩き UI を廃し、プロフィール CRUD + アドバイス取得に一本化。
+
 - `frontend/src/style.css`
-  - `.shell` レイアウトを新設し、左右マージンと最大幅を指定。01 の `.app-shell` 相当は使わず、02 用に薄く調整。
+  ```diff
+  +.shell {
+  +  max-width: 760px;
+  +  width: min(760px, 92vw);
+  +  margin: 2rem auto;
+  +  padding: 1.5rem;
+  +}
+  ```
+  - 01 の `.app-shell` は使わず、02 専用ラッパで左右ガッターを確保。
+
 - `README.md`
-  - 上記機能説明と差分解説を追加（本節）。01 では README に LLM 疎通のみを記載していたが、02 ではプロフィール保存・アドバイス取得・OpenAI キー設定方法まで網羅。
+  ```diff
+  +## 01_bootstrap との実装差分 ...
+  +...プロフィール保存/取得/アドバイスの手順と OpenAI 設定を追記...
+  ```
+  - 01 では LLM 疎通のみだった説明を、02 ではプロフィール永続化＋アドバイス取得手順まで教材化。
 
 ## できること（API）
 - `/api/health` … フェーズ確認
