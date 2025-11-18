@@ -2,5 +2,13 @@ body { font-family: sans-serif; background: #f8fafc; margin: 0; }
 main.shell { max-width: 720px; margin: 2rem auto; padding: 1.5rem; background: #fff; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 1rem; }
 textarea { width: 100%; min-height: 100px; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; }
 button { width: fit-content; padding: 0.6rem 1rem; border-radius: 8px; border: none; background: #2563eb; color: #fff; cursor: pointer; }
-pre.reply { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px; min-height: 80px; }
+pre.reply {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 8px;
+  min-height: 80px;
+  white-space: pre-wrap; /* 改行を保持しつつ折り返しも有効にする */
+  word-break: break-word; /* 日本語などスペース無しでも折り返す */
+}
 .muted { color: #64748b; }
