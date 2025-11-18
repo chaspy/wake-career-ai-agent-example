@@ -139,12 +139,17 @@
    return str(res.content or "")
 
  @app.post("/api/profile/advice")
- def get_profile_advice(payload):
-   profile = _load_or_create_profile()
-   messages = _build_prompt(profile, payload.question)
-   answer = _call_openai(messages) if os.getenv("OPENAI_API_KEY") else _fake_answer(profile, payload.question)
-   return AdviceResponse(provider="openai" if os.getenv("OPENAI_API_KEY") else "fake", answer=answer)
+def get_profile_advice(payload):
+  profile = _load_or_create_profile()
+  messages = _build_prompt(profile, payload.question)
+  answer = _call_openai(messages) if os.getenv("OPENAI_API_KEY") else _fake_answer(profile, payload.question)
+  return AdviceResponse(provider="openai" if os.getenv("OPENAI_API_KEY") else "fake", answer=answer)
 ```
+
+### ポイント解説（システムプロンプトへの埋め込み）
+- プロフィールは構造体を **そのまま日本語テキストに起こし、System/User メッセージへ直埋め** しています。ベクトル化やツール呼び出しは使わず、シンプルな ChatCompletion なので挙動が読みやすい。
+- System メッセージでキャリアコーチの役割・回答形式（箇条書き/400文字以内）を固定し、User メッセージにプロフィール全文＋質問を載せる 2 段構成。プロンプト注入漏れを防ぎ、再現性を高めています。
+- フェイク応答も `provider/answer` を同じ形で返すため、フロントはプロバイダー表示を切り替えるだけで live/fake を判断可能。キーなし環境でも UI が壊れません。
 
 ### 実例（リクエスト/レスポンス）
 
