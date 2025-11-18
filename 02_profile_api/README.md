@@ -44,11 +44,7 @@
   - `DEFAULT_PROFILE` を追加し、未保存でも初回アクセスで自動生成。
 
 - `backend/pyproject.toml` / `backend/requirements.txt` / `backend/uv.lock`
-  ```diff
-  -openai
-  +langchain-openai
-  ```
-  - 02 では LangChain を維持しつつ、プロフィール文脈組み立てとフェイク回答ロジックを追加。
+  - 依存パッケージは 01 と同じく `langchain-openai` を採用（生 `openai` SDK には移行していない）。02 ではこの上にプロフィール要約ヘルパとフェイク応答を積み増し。
 
 - `frontend/src/main.tsx`
   ```diff
