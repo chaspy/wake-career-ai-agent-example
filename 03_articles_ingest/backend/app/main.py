@@ -159,12 +159,15 @@ def recommend(payload: RecommendationRequest) -> RecommendationResponse:
     recs: List[Recommendation] = []
     for doc, score in docs:
         meta = doc.metadata or {}
+        # FAISS は距離スコア（小さいほど近い）を返すので、0-1 の類似度に正規化して UI にわかりやすく出す
+        distance = float(score)
+        similarity = 1.0 / (1.0 + distance)
         recs.append(
             Recommendation(
                 slug=meta.get("slug", ""),
                 title=meta.get("title", "Untitled"),
                 url=meta.get("source_url", ""),
-                score=float(score),
+                score=similarity,
                 excerpt=doc.page_content[:240],
                 reasons=_make_reasons(doc.page_content, payload.query),
                 citations=[meta.get("source_url", "")],
