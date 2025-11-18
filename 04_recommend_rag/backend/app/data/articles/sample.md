@@ -1,4 +1,6 @@
-# RAG サンプル記事
-source_url: https://example.com/rag-sample
+---
+title: 推薦RAGと求人連携のイメージ
+source_url: https://example.com/rag-jobs
+---
 
-RAG 推薦のダミー記事です。LLMは呼ばず、固定理由でレスポンスします。
+RAG の推薦理由と求人検索を組み合わせるステップ用のサンプル記事です。ベクトル検索の種記事として利用されます。

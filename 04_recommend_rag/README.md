@@ -1,8 +1,9 @@
 # 04_recommend_rag
 
-前フェーズとの差分: 簡易推薦エンドポイントを追加（LLMなしの fake RAG）。求人・プランニングはまだ無し。
-- `/api/recommendations` は先頭記事をダミー推薦として返す
-- 記事一覧/詳細は 03 と同じ
+前フェーズとの差分: RAG 推薦に加え、求人検索（fake）を追加。`MODE=fake/live` 切替、FAISS/Chroma ベクトルストアを利用。
+- `/api/articles`・`/api/articles/{slug}` … 03 と同じ
+- `/api/recommendations` … FAISS 検索＋ fake/live 理由生成
+- `/api/jobs/search` … 求人フェイク検索（キーワード・ロケーション）
 
 ## 起動手順（uv sync 統一）
 ```bash
@@ -14,9 +15,12 @@ cd backend && uv sync && cd ..
 # frontend 依存
 cd frontend && npm install && cd ..
 
+# ベクトルストアをシード（初回のみ）
+cd backend && uv run python scripts/seed.py && cd ..
+
 # 開発サーバ起動（デフォルト: backend 48089 / frontend 45073）
 BACKEND_PORT=48089 FRONTEND_PORT=45073 make dev
-# ブラウザ: http://localhost:45073
+# ブラウザ: http://localhost:45073 （記事一覧・RAG・求人の3カラム表示）
 ```
 
 「おすすめを取得（ダミー）」でカード表示されれば準備完了。ポート競合時は環境変数で変更してください。
