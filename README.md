@@ -32,11 +32,26 @@ make dev   # backend:8089 / frontend:5173
 
 ブラウザで http://localhost:5173 を開いてください。
 
-## Installation
+## Installation（ツール導入を丁寧に）
 
-- [uv](https://github.com/astral-sh/uv) （Python 依存の解決と仮想環境作成に利用）
-- Node.js 20 以上 / npm 10 以上
-- make
+- Git: macOS は多くの環境で標準。無ければ `xcode-select --install` または https://git-scm.com/downloads からインストール。
+  - 確認: `git --version`
+- Python 3.11 以上: 
+  - macOS (Homebrew): `brew install python@3.12`
+  - Windows: https://www.python.org/downloads/ で 3.11+ を入れ、「Add Python to PATH」をオン。
+  - 確認: `python3 --version`
+- uv: Python の依存解決と仮想環境作成をまとめて行うツール。
+  - インストール: `curl -LsSf https://astral.sh/uv/install.sh | sh`（macOS/Linux）
+  - PowerShell: `irm https://astral.sh/uv/install.ps1 | iex`
+  - 確認: `uv --version`
+- Node.js 20 以上 / npm 10 以上:
+  - macOS (Homebrew): `brew install node@20`
+  - 公式: https://nodejs.org/ から LTS (20+) を取得
+  - 確認: `node -v` / `npm -v`
+- make:
+  - macOS: 標準。無ければ `xcode-select --install`
+  - Windows: WSL や Git Bash で利用するか `choco install make`
+  - 確認: `make -v`
 
 1. ツール確認: `git --version` / `node -v` / `npm -v` / `python3 --version` / `uv --version`
 2. リポジトリ取得:
