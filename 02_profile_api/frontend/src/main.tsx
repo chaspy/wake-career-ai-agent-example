@@ -91,14 +91,14 @@ function App() {
         スキル（カンマ区切り）
         <input
           value={form.skills.join(', ')}
-          onChange={(e) => update('skills', e.target.value.split(',').map((v) => v.trim()).filter(Boolean)))}
+          onChange={(e) => update('skills', e.target.value.split(',').map((v) => v.trim()).filter(Boolean))}
         />
       </label>
       <label>
         興味（カンマ区切り）
         <input
           value={form.interests.join(', ')}
-          onChange={(e) => update('interests', e.target.value.split(',').map((v) => v.trim()).filter(Boolean)))}
+          onChange={(e) => update('interests', e.target.value.split(',').map((v) => v.trim()).filter(Boolean))}
         />
       </label>
       <label>
