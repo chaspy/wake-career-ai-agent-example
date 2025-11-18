@@ -1,27 +1,45 @@
-# WAKE Career AI Agent (WIP)
+# WAKE Career AI Agent
+
+このリポジトリは 2025/11/18 開催の [ハンズオン】1 時間で作る自作 AI エージェント〜LangChain × LangGraph〜](https://wake-career.connpass.com/event/372312/) で利用するサンプルリポジトリです。
+
+## 免責事項
+
+- 本リポジトリはあくまで手を動かして AI Agent を体験するための手がかりとなるサンプルコードであり、動作や品質を保証しません
+- 本リポジトリの内容は予告なく変更されることがあります
+
+## サンプルアプリケーションについて
 
 ローカルで Vite/React フロントと FastAPI バックエンドを並列起動できる最小スキャフォールドです。ステップを追うごとに「プロフィール → 記事/RAG → 求人 → プランニング」と機能が増えていきます。
 
-## フェーズはスナップショット方式
 - `01_bootstrap` → `02_profile_api` → `03_articles_ingest` → `04_recommend_rag` → `05_jobs_and_planning`（＝ルートと同等）の順に機能が積み上がります。
 - 各フォルダは「その時点の完成形」を丸ごと持つスナップショットです。**混ぜずに、動かしたいステップを単体で起動**してください。
 - 最新機能を一気に見たい人はリポジトリ直下（`backend/`, `frontend/`）を使えば OK です。
+- 01_bootstrap からはじめて、少しずつ実装を進めるのも良いでしょう。ディレクトリを切り替えて、動作確認しながら、コードの diff を見るのも良いでしょう。
+- もちろんあなただけのオリジナルの AI Agent を作るのも構いません
 
-## クイックスタート（前提: Git・Node・Python・uv 済み）
+## Setup
+
+## QuickStart
+
+git, node, python, uv がある場合、以下で動作確認ができます。
+
 ```bash
 git clone https://github.com/chaspy/wake-career-ai-agent-example.git
 cd wake-career-ai-agent-example
-MODE=fake make dev   # backend:8089 / frontend:5173
+cp .env.sample .env # Set OPENAI_API_KEY
+make dev   # backend:8089 / frontend:5173
 ```
-ブラウザで http://localhost:5173 を開きます。OpenAI キーが無くても fake モードで一通り体験できます。
 
-## 必須ツール
+ブラウザで http://localhost:5173 を開いてください。
+
+## Installation
 
 - [uv](https://github.com/astral-sh/uv) （Python 依存の解決と仮想環境作成に利用）
 - Node.js 20 以上 / npm 10 以上
 - make
 
-## じっくり準備する手順（1つずつ確認したい方向け）
+## じっくり準備する手順（1 つずつ確認したい方向け）
+
 1. ツール確認: `git --version` / `node -v` / `npm -v` / `python3 --version` / `uv --version`
 2. リポジトリ取得:
    ```bash
@@ -43,16 +61,18 @@ MODE=fake make dev   # backend:8089 / frontend:5173
    MODE=fake make dev
    ```
    - ブラウザ: http://localhost:5173
-   - Health が `fake` と出ればOK。liveにしたいときは `.env` にキーを入れて再起動。
+   - Health が `fake` と出れば OK。live にしたいときは `.env` にキーを入れて再起動。
 6. 停止: ターミナルで `Ctrl+C`。
 
 ### トラブルシュート早見表
+
 - `uv: command not found` → uv を入れてから `uv sync` を実行。
 - `Failed to spawn: uvicorn` → 依存未インストール。`cd backend && uv sync` を先に。
-- ポート競合 (5173/8089使用中) → `BACKEND_PORT=9000 FRONTEND_PORT=5200 MODE=fake make dev` などで上書き。
+- ポート競合 (5173/8089 使用中) → `BACKEND_PORT=9000 FRONTEND_PORT=5200 MODE=fake make dev` などで上書き。
 - RAG が 503 → seed 未実行。RAG があるステップで `cd backend && uv run python scripts/seed.py`。
 
 ## フェーズ別の起動ポート
+
 - 01_bootstrap: backend 18089 / frontend 15073
 - 02_profile_api: backend 28089 / frontend 25073
 - 03_articles_ingest: backend 38089 / frontend 35073
@@ -62,6 +82,7 @@ MODE=fake make dev   # backend:8089 / frontend:5173
 ※ それぞれ `make dev` で立ち上がります。複数フェーズを同時に起動する場合もポート衝突しません。
 
 ## 各フェーズ共通の起動手順（uv sync 統一）
+
 以下のコマンドブロックを、対象フェーズのディレクトリ名とポートに置き換えて実行してください。
 
 ```bash
@@ -80,100 +101,3 @@ BACKEND_PORT=28089 FRONTEND_PORT=25073 make dev
 ```
 
 `BACKEND_PORT` / `FRONTEND_PORT` は上の表の値を使うか、都合にあわせて変更してください。uv が無い場合は `curl -LsSf https://astral.sh/uv/install.sh | sh` で導入できます。
-
-## 現状の開発フロー (Step 0)
-
-```bash
-cp .env.sample .env  # 任意。未作成でも MODE=fake で起動
-make install         # backend と frontend の依存を導入
-MODE=fake make dev   # :8089 (API) / :5173 (Vite) を同時起動
-```
-
-`uv sync` は `.venv` を自動生成し、`requirements.txt` に基づいて依存をインストールします。uv が PATH に無い場合は先に `curl -LsSf https://astral.sh/uv/install.sh | sh` などで導入してください。
-
-Makefile はリポジトリ直下の `.env` を自動で読み込み、`MODE` や `DB_MODE`、ポート番号などをそのままコマンドへエクスポートします。値を変えたい場合は `.env` を編集するだけで `make dev` などのターゲットに反映されます。
-
-ブラウザで `http://localhost:5173` を開き、Health API の応答が表示されれば準備完了です。`MODE` のデフォルトは `live` ですが、OpenAI API キーが未設定の場合は自動的に `fake` モードとして動作します。API の待受ポートは `.env` の `BACKEND_PORT`（デフォルト 8089）で調整できます。
-
-## プロフィール API (Step 1)
-
-```bash
-# SQLite を利用する例
-MODE=fake DB_MODE=sqlite curl -s http://localhost:8089/api/profile # => 404 (未設定)
-
-curl -X PUT http://localhost:8089/api/profile \
-  -H 'Content-Type: application/json' \
-  -d '{
-        "name":"Alice",
-        "years":5,
-        "current_role":"Frontend Engineer",
-        "target_role":"AI Product Manager",
-        "skills":["React","Python"],
-        "interests":["Career Coaching"],
-        "notes":"Looking for AI-assisted workflows"
-      }'
-
-curl -s http://localhost:8089/api/profile | jq
-
-# JSON モード
-DB_MODE=json JSON_DB_DIR=/tmp/wake-json MODE=fake BACKEND_PORT=9000 uvicorn uvicorn_app:app --reload --port 9000
-```
-
-`DB_MODE=json` に切り替えると `backend/data/db/profile.json`（もしくは `JSON_DB_DIR` で指定したパス）に保存されます。
-
-## 記事取り込み & ベクトル化 (Step 2)
-
-1. WAKE Career の許諾済み記事を Markdown 化します。
-   ```bash
-   cd backend && uv run python scripts/fetch_wake_article.py \
-     --url https://wake-career.jp/articles/awesome \
-     --tags "キャリア,AI" \
-     --category ai-career
-   ```
-   `backend/data/wake_articles/` に front matter 付き Markdown が生成されます。
-2. `make seed` または `cd backend && uv run python scripts/seed.py` を実行すると、記事が分割・ベクトル化され `backend/data/vectorstore/` に保存されます。同時に ArticleIndex (SQLite/JSON) が更新されます。
-
-```bash
-MODE=fake DB_MODE=sqlite make seed
-# => [seed] 2 件の記事を faiss で保存しました。path=backend/data/vectorstore/faiss ...
-```
-
-`.sample.md` で終わるファイルはダミーデータとしてコミット済みです。本番では `.md` を配置し、`tags` / `category` / `published` を front matter に記述してください。
-
-## 推薦 API (Step 3)
-
-FAISS/Chroma に記事が登録済みであれば、FastAPI の `/api/recommendations` から RAG 推薦を取得できます。
-
-```bash
-MODE=fake DB_MODE=sqlite BACKEND_PORT=8089 uvicorn uvicorn_app:app --reload --port 8089 &
-
-curl -s -X POST http://localhost:8089/api/recommendations \
-  -H 'Content-Type: application/json' \
-  -d '{
-        "query": "AI PM キャリア",
-        "top_k": 2
-      }' | jq
-```
-
-レスポンス例:
-
-```json
-{
-  "mode": "fake",
-  "recommendations": [
-    {
-      "title": "WAKE Career 実践AI PM",
-      "reasons": ["target role..."],
-      "citations": [
-        {
-          "source_url": "https://wake-career.jp/media/wakeskill-1on1",
-          "title": "WAKE Career 実践AI PM",
-          "line": 5
-        }
-      ]
-    }
-  ]
-}
-```
-
-MODE=live かつ `OPENAI_API_KEY` を設定すると、LangGraph の call_model ノードが ChatOpenAI を用いて理由文を生成します（引用スラッグ必須のプロンプトでJSONを出力）。キーが無い場合でも fake モードで最後まで同じスキーマのレスポンスが得られます。
