@@ -116,3 +116,65 @@ make dev
   - PydanticOutputParser（`LLMResponse`）で JSON 形式を強制し、推薦理由を3観点で返す。
   - 成功しない場合や fake モードでは `offline_answer` が deterministic な理由文を生成。
 - ここで扱うのは「推薦カード生成」専用フロー。求人検索やフロントのステージ表示とは独立しており、LangGraph を足がかりにプランニング等のワークフローを後続フェーズに拡張できる構成。
+
+### 実コードで読む（抜粋）
+
+```py title="backend/app/rag/graph.py"
+def build_recommendation_graph():
+    graph = StateGraph(GraphState)
+    graph.add_node("build_query", _build_query)   # プロフィール/入力からクエリ生成
+    graph.add_node("retrieve", _retrieve)         # FAISS で候補記事を取得
+    graph.add_node("call_model", _call_model)     # LLM で理由生成 or offline_answer
+    graph.add_node("respond", _respond)           # 空結果補填・最終整形
+    graph.set_entry_point("build_query")
+    graph.add_edge("build_query", "retrieve")
+    graph.add_edge("retrieve", "call_model")
+    graph.add_edge("call_model", "respond")
+    graph.add_edge("respond", "__end__")
+    return graph.compile()
+```
+
+```py title="backend/app/rag/graph.py"
+llm = ChatOpenAI(model=settings.openai_model, temperature=0.2, api_key=settings.openai_api_key)
+parser = PydanticOutputParser(pydantic_object=LLMResponse)
+prompt = ChatPromptTemplate.from_messages([...])  # プロフィール/検索文脈を詰め込む
+chain = prompt | llm | parser                     # LangChain Expression Language
+llm_response = chain.invoke({
+    "profile": profile_text,
+    "query": query,
+    "context": context,        # 上位k記事の本文スニペット
+    "top_k": top_k,
+    "format_instructions": parser.get_format_instructions(),
+})
+```
+
+```py title="backend/app/rag/fake_model.py"
+def offline_answer(documents: list[Document], profile: Profile | None, top_k: int):
+    # OpenAI キーが無いときのフォールバック。決定論的に理由を生成して UI を埋める。
+```
+
+求人 API との接続（バックエンド・フロント）もコード付きで追えるようにしておきます。
+
+```py title="backend/app/routers/jobs.py"
+@router.post("/api/jobs/search", response_model=JobSearchResponse)
+async def search_jobs(payload: JobSearchRequest) -> JobSearchResponse:
+    q = (payload.query or "エンジニア").strip()
+    loc = (payload.location or "Tokyo").strip()
+    jobs = _fake_jobs(q, loc)          # ←ここを実求人クライアントに差し替えれば OK
+    return JobSearchResponse(
+        jobs=jobs[: payload.limit],
+        sources=sorted({job.url for job in jobs}),
+        queries=[q],
+    )
+```
+
+```tsx title="frontend/src/pages/Home.tsx"
+const jobResponse = await searchJobs({
+  profile: readyProfile ?? undefined,
+  query: query || undefined,
+  limit: 10,
+})
+setJobs(jobResponse.jobs)
+setJobSources(jobResponse.sources)
+setJobQueries(jobResponse.queries ?? [])
+```
