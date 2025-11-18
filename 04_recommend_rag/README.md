@@ -5,21 +5,15 @@
 - `/api/recommendations` … FAISS 検索＋ fake/live 理由生成
 - `/api/jobs/search` … 求人フェイク検索（キーワード・ロケーション）
 
-## 起動手順（uv sync 統一）
+## 起動手順（最短）
 ```bash
 cd 04_recommend_rag
+make dev   # 初回は内部で uv run / npm install が走ります
 
-# backend 依存（uv sync が .venv を自動作成）
-cd backend && uv sync && cd ..
-
-# frontend 依存
+# RAG 用ベクトルストアを作る（初回だけでOK）
+cd backend && uv sync && uv run python scripts/seed.py && cd ..
 cd frontend && npm install && cd ..
-
-# ベクトルストアをシード（初回のみ）
-cd backend && uv run python scripts/seed.py && cd ..
-
-# 開発サーバ起動（デフォルト: backend 48089 / frontend 45073）
-BACKEND_PORT=48089 FRONTEND_PORT=45073 make dev
+make dev
 # ブラウザ: http://localhost:45073 （記事一覧・RAG・求人の3カラム表示）
 
 ## 仕組みの要点

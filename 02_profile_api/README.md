@@ -15,19 +15,16 @@
 - 将来の DB 切替に備え、I/O を関数で分離しているので Step03 以降に差し替えやすい構造。
 - frontend: フォーム入力→保存→再読込で値が残るシンプル UI。
 
-## 起動手順（uv sync 統一）
+## 起動手順（最短）
 ```bash
 cd 02_profile_api
-
-# backend 依存（uv sync が .venv を自動作成）
-cd backend && uv sync && cd ..
-
-# frontend 依存
-cd frontend && npm install && cd ..
-
-# 開発サーバ起動（デフォルト: backend 28089 / frontend 25073）
-BACKEND_PORT=28089 FRONTEND_PORT=25073 make dev
-# ブラウザ: http://localhost:25073
+make dev   # 初回は内部で uv run / npm install が走ります
 ```
 
-ポート競合時は `BACKEND_PORT` / `FRONTEND_PORT` を上書きしてください。
+高速化したい場合（依存を事前導入）
+```bash
+cd 02_profile_api/backend && uv sync && cd ..
+cd frontend && npm install && cd ..
+make dev
+```
+デフォルトポートは backend 28089 / frontend 25073。競合する場合は `BACKEND_PORT` / `FRONTEND_PORT` を上書きしてください。
