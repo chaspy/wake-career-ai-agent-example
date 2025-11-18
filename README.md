@@ -17,33 +17,6 @@
 - 01_bootstrap からはじめて、少しずつ実装を進めるのも良いでしょう。ディレクトリを切り替えて、動作確認しながら、コードの diff を見るのも良いでしょう。
 - もちろんあなただけのオリジナルの AI Agent を作るのも構いません
 
-### LangChain / LangGraph を使っている箇所（抜粋）
-
-- RAG 推薦グラフ: `backend/app/rag/graph.py`
-  - LangGraph の `StateGraph` で `build_query → retrieve → call_model → respond` を組み、LLM 呼び出しは LangChain チェーンで構築。
-  - ChatOpenAI + ChatPromptTemplate + PydanticOutputParser をパイプ演算子でつないで JSON 生成を強制。
-
-```python
-# backend/app/rag/graph.py
-llm = ChatOpenAI(model=settings.openai_model, temperature=0.2, api_key=settings.openai_api_key)
-parser = PydanticOutputParser(pydantic_object=LLMResponse)
-prompt = ChatPromptTemplate.from_messages([...])
-chain = prompt | llm | parser
-llm_response = chain.invoke({"profile": profile_text, "query": query, "context": context, "top_k": top_k,
-                             "format_instructions": parser.get_format_instructions()})
-```
-
-- ベクトル検索リトリーバ: `backend/app/rag/retriever.py`
-  - FAISS/Chroma をロードし、LangChain Retriever として返却。
-
-```python
-# backend/app/rag/retriever.py
-store = _load_vectorstore()
-return store.as_retriever(search_kwargs={"k": k})
-```
-
-- 求人要約/スコアリング: `backend/app/jobs/__init__.py` 内で ChatOpenAI を使い、検索結果を要約・ソートするユーティリティを定義。
-
 ## Setup
 
 ## QuickStart
