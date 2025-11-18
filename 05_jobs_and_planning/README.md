@@ -8,6 +8,36 @@
 - Node.js 20 以上 / npm 10 以上
 - make
 
+## フェーズ別の起動ポート
+- 01_bootstrap: backend 18089 / frontend 15073
+- 02_profile_api: backend 28089 / frontend 25073
+- 03_articles_ingest: backend 38089 / frontend 35073
+- 04_recommend_rag: backend 48089 / frontend 45073
+- 05_jobs_and_planning: backend 8089 / frontend 5173（完成版）
+
+※ それぞれ `make dev` で立ち上がります。複数フェーズを同時に起動する場合もポート衝突しません。
+
+## 各フェーズ共通の起動手順（uv 統一）
+以下のコマンドブロックを、対象フェーズのディレクトリ名とポートに置き換えて実行してください。
+
+```bash
+# 例: 02_profile_api を backend 28089 / frontend 25073 で起動する場合
+cd 02_profile_api
+
+# backend 依存（uv + 仮想環境 backend/.venv）
+uv venv backend/.venv
+uv pip install --python backend/.venv/bin/python -r backend/requirements.txt
+
+# frontend 依存
+cd frontend && npm install && cd ..
+
+# 開発サーバ起動（ポートは上の表から対応する値をセット）
+BACKEND_PORT=28089 FRONTEND_PORT=25073 make dev
+# ブラウザ: http://localhost:25073
+```
+
+`BACKEND_PORT` / `FRONTEND_PORT` は上の表の値を使うか、都合にあわせて変更してください。uv が無い場合は `curl -LsSf https://astral.sh/uv/install.sh | sh` で導入できます。
+
 ## ハンズオン参加者向け 事前準備チェックリスト（15–20分）
 
 1. Git と Node.js をインストール
@@ -92,13 +122,13 @@ DB_MODE=json JSON_DB_DIR=/tmp/wake-json MODE=fake BACKEND_PORT=9000 uvicorn uvic
 
 1. WAKE Career の許諾済み記事を Markdown 化します。
    ```bash
-   python backend/scripts/fetch_wake_article.py \
+   backend/.venv/bin/python backend/scripts/fetch_wake_article.py \
      --url https://wake-career.jp/articles/awesome \
      --tags "キャリア,AI" \
      --category ai-career
    ```
    `backend/data/wake_articles/` に front matter 付き Markdown が生成されます。
-2. `make seed` または `python backend/scripts/seed.py` を実行すると、記事が分割・ベクトル化され `backend/data/vectorstore/` に保存されます。同時に ArticleIndex (SQLite/JSON) が更新されます。
+2. `make seed` または `backend/.venv/bin/python backend/scripts/seed.py` を実行すると、記事が分割・ベクトル化され `backend/data/vectorstore/` に保存されます。同時に ArticleIndex (SQLite/JSON) が更新されます。
 
 ```bash
 MODE=fake DB_MODE=sqlite make seed

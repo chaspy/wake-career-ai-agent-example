@@ -16,11 +16,8 @@ FRONTEND_PORT ?= 5173
 
 .PHONY: install install-backend install-frontend dev backend frontend test lint fmt clean seed
 
-$(BACKEND_PYTHON):
-	cd $(BACKEND_DIR) && $(UV) venv $(BACKEND_VENV_REL)
-
-install-backend: $(BACKEND_PYTHON)
-	cd $(BACKEND_DIR) && $(UV) pip install --python $(BACKEND_PYTHON_REL) -r requirements.txt
+install-backend:
+	cd $(BACKEND_DIR) && $(UV) sync
 
 install-frontend:
 	cd frontend && npm install

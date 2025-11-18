@@ -33,11 +33,12 @@
    # MODE は live のままで可。キー未設定なら自動で fake モードになります。
    ```
 
-5. 依存インストール
+5. 依存インストール（uv sync を使用）
    ```bash
-   make install
+   cd backend && uv sync
+   cd ../frontend && npm install && cd ..
    ```
-   - backend の仮想環境（`backend/.venv`）と frontend の npm 依存をまとめて導入します。
+   - uv が `backend/.venv` を自動生成し、`requirements.txt` の依存をインストールします。
 
 6. 動作確認（余裕があれば）
    ```bash
@@ -57,6 +58,26 @@
 
 ※ それぞれ `make dev` で立ち上がります。複数フェーズを同時に起動する場合もポート衝突しません。
 
+## 各フェーズ共通の起動手順（uv sync 統一）
+以下のコマンドブロックを、対象フェーズのディレクトリ名とポートに置き換えて実行してください。
+
+```bash
+# 例: 02_profile_api を backend 28089 / frontend 25073 で起動する場合
+cd 02_profile_api
+
+# backend 依存（uv sync が .venv を自動作成）
+cd backend && uv sync && cd ..
+
+# frontend 依存
+cd frontend && npm install && cd ..
+
+# 開発サーバ起動（ポートは上の表から対応する値をセット）
+BACKEND_PORT=28089 FRONTEND_PORT=25073 make dev
+# ブラウザ: http://localhost:25073
+```
+
+`BACKEND_PORT` / `FRONTEND_PORT` は上の表の値を使うか、都合にあわせて変更してください。uv が無い場合は `curl -LsSf https://astral.sh/uv/install.sh | sh` で導入できます。
+
 ## 現状の開発フロー (Step 0)
 
 ```bash
@@ -65,7 +86,7 @@ make install         # backend と frontend の依存を導入
 MODE=fake make dev   # :8089 (API) / :5173 (Vite) を同時起動
 ```
 
-`make install` では uv が `backend/.venv` を生成し、`requirements.txt` を同環境にインストールします。uv が PATH に無い場合は先に `curl -LsSf https://astral.sh/uv/install.sh | sh` などで導入してください。
+`uv sync` は `.venv` を自動生成し、`requirements.txt` に基づいて依存をインストールします。uv が PATH に無い場合は先に `curl -LsSf https://astral.sh/uv/install.sh | sh` などで導入してください。
 
 Makefile はリポジトリ直下の `.env` を自動で読み込み、`MODE` や `DB_MODE`、ポート番号などをそのままコマンドへエクスポートします。値を変えたい場合は `.env` を編集するだけで `make dev` などのターゲットに反映されます。
 
@@ -101,13 +122,13 @@ DB_MODE=json JSON_DB_DIR=/tmp/wake-json MODE=fake BACKEND_PORT=9000 uvicorn uvic
 
 1. WAKE Career の許諾済み記事を Markdown 化します。
    ```bash
-   python backend/scripts/fetch_wake_article.py \
+   cd backend && uv run python scripts/fetch_wake_article.py \
      --url https://wake-career.jp/articles/awesome \
      --tags "キャリア,AI" \
      --category ai-career
    ```
    `backend/data/wake_articles/` に front matter 付き Markdown が生成されます。
-2. `make seed` または `python backend/scripts/seed.py` を実行すると、記事が分割・ベクトル化され `backend/data/vectorstore/` に保存されます。同時に ArticleIndex (SQLite/JSON) が更新されます。
+2. `make seed` または `cd backend && uv run python scripts/seed.py` を実行すると、記事が分割・ベクトル化され `backend/data/vectorstore/` に保存されます。同時に ArticleIndex (SQLite/JSON) が更新されます。
 
 ```bash
 MODE=fake DB_MODE=sqlite make seed
