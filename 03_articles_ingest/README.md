@@ -28,13 +28,108 @@ make dev
 - 推薦: `/api/recommendations` は FAISS の類似検索を叩き、fake 時は固定文言、live 時は ChatOpenAI で理由生成。
 - mode/provider: health で `fake/live` を返すので、UI 側で状態表示できます。
 
-## 02→03 のコード差分（解説）
-- **データの広がり**: 記事 Markdown を `backend/app/data/articles/` に置き、`seed.py` がチャンク化→FAISS に格納（`RecursiveCharacterTextSplitter` と `FAISS.from_documents`）。ベクトルストアは `index.faiss/index.pkl` で保存・読み込みします（`backend/app/main.py:100-175`）。
-- **埋め込みの切替**: `OPENAI_API_KEY` 有無で `OpenAIEmbeddings(text-embedding-3-small)` / `FakeEmbeddings(1536次元)` を動的に選択（`backend/app/main.py:109-112`）。02 では LLM 呼び出しのみだったため、Embedding は新規追加。
-- **RAG ルート追加**: `/api/recommendations` が `similarity_search_with_score` を呼び、FAISS の距離スコアを 0〜1 類似度に正規化して返却（`backend/app/main.py:151-176`）。理由文は ChatOpenAI で1文生成、キー未設定時は固定文（`_make_reasons` at 211-221）。
-- **プロフィール機能は継承**: `/api/profile` と `/api/profile/advice` は 02 のまま形を保ちつつ保存先が `data/profile.json` に変更。Fake/Live 両モードで同じプロンプトビルダーを使用（`backend/app/main.py:125-189, 224-243`）。デフォルトプロフィールを同梱したためクローン直後に叩けます。
-- **フロント統合**: 02 のプロフィール＋アドバイス UI を残したまま、記事一覧（横並び）と RAG 推薦カードを同一ページに配置。ボタンにローディング表示を付与し、類似度スコアが 0〜1 で見えるようにしています（`frontend/src/main.tsx` 全体、`style.css` の `list.horizontal`, `reco-grid` など）。
-- **変わっていないもの**: プロファイルスキーマ・アドバイスのプロンプト設計・Fake 回答の方針は 02 と同一。FastAPI の型定義や Pydantic モデルの構造もほぼ踏襲しています。
+## 02→03 のコード差分（解説＋スニペット）
+### バックエンド
+**プロフィール機能は継承（保存先だけ変更）**  
+`/api/profile` は 02 と同じスキーマ・プロンプトを維持しつつ、保存先が `data/profile.json` に変わりました。デフォルトプロフィールを同梱済み。
+```python
+# backend/app/main.py:125-189,224-243 の抜粋
+@app.put("/api/profile")
+def upsert_profile(payload: Profile):
+    PROFILE_FILE.write_text(payload.model_dump_json(indent=2, ensure_ascii=False), encoding="utf-8")
+    return ProfileResponse(**payload.model_dump())
+
+def _build_prompt(profile: ProfileResponse, question: str) -> List[dict[str, str]]:
+    profile_summary = (
+        f"氏名: {profile.name}\n…\nノート: {profile.notes or 'なし'}"
+    )
+    system = "あなたは日本語で回答するキャリアコーチです。…"
+    return [{"role": "system", "content": system},
+            {"role": "user", "content": f"プロフィール:\n{profile_summary}\n\n相談内容: {question}"}]
+```
+
+**Embeddings とベクトルストア読み込み**  
+OpenAI キー有無で埋め込みを切替え、FAISS の `index.faiss/index.pkl` をロード（初回は `scripts/seed.py` で生成）。
+```python
+# backend/app/main.py:100-113
+@lru_cache(maxsize=1)
+def get_vectorstore() -> FAISS:
+    index_file = VSTORE_DIR / "index.faiss"
+    if not index_file.exists():
+        raise FileNotFoundError("vectorstore not seeded; run `uv run python scripts/seed.py`")
+    return FAISS.load_local(str(VSTORE_DIR), _embedding_fn(), allow_dangerous_deserialization=True)
+
+def _embedding_fn():
+    if os.getenv("OPENAI_API_KEY"):
+        return OpenAIEmbeddings(model="text-embedding-3-small")
+    return FakeEmbeddings(size=1536)
+```
+
+**RAG 推薦 API**  
+FAISS の距離スコアを 0〜1 類似度に正規化して返却。複数チャンクから拾った本文先頭を excerpt に入れ、引用元 URL も付与。
+```python
+# backend/app/main.py:151-176
+docs = store.similarity_search_with_score(payload.query, k=payload.top_k)
+for doc, score in docs:
+    distance = float(score)
+    similarity = 1.0 / (1.0 + distance)  # 0~1 に見やすく正規化
+    recs.append(Recommendation(
+        slug=meta.get("slug", ""), title=meta.get("title", "Untitled"),
+        url=meta.get("source_url", ""), score=similarity,
+        excerpt=doc.page_content[:240],
+        reasons=_make_reasons(doc.page_content, payload.query),
+        citations=[meta.get("source_url", "")]
+    ))
+```
+
+**推薦理由の生成**  
+キー無しなら固定文、キーありなら ChatOpenAI で 1 文サマリ。02 のアドバイスと同じくシンプルな system + user プロンプト構成。
+```python
+# backend/app/main.py:211-221
+def _make_reasons(text: str, query: str) -> List[str]:
+    if not os.getenv("OPENAI_API_KEY"):
+        return [f"fake: '{query}' と関連しそうな本文を抽出しました"]
+    llm = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), temperature=0)
+    prompt = ("ユーザの関心と本文を渡すので、1文で推薦理由を出してください。必ず日本語で簡潔に。\n"
+              f"[query]\n{query}\n[context]\n{text[:500]}")
+    out = llm.invoke([{"role": "user", "content": prompt}])
+    return [out.content]
+```
+
+**記事インジェスト**  
+02 には無かったチャンク分割＋ベクトル化処理を `ingest_articles` に追加。`seed.py` から再利用。
+```python
+# backend/app/main.py:260-289
+splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=80)
+for chunk in splitter.split_text(post.content):
+    docs.append({"page_content": chunk,
+                 "metadata": {"title": title, "source_url": source, "slug": slug}})
+vs = FAISS.from_documents([Document(**d) for d in docs], _embedding_fn())
+vs.save_local(str(vector_dir))
+```
+
+### フロントエンド
+**プロフィール＋RAG を同一画面に統合**  
+02 のプロフィール/アドバイス UI を残しつつ、記事一覧（横スクロール風リスト）と RAG カードをページ上部に配置。ボタンのローディング表示も追加。
+```tsx
+// frontend/src/main.tsx 抜粋
+const [adviceLoading, setAdviceLoading] = useState(false);
+const askAdvice = async () => {
+  setAdviceLoading(true); setStatus('LLM 呼び出し中...');
+  const res = await fetch('/api/profile/advice', { method: 'POST', ... });
+  const data: AdviceResponse = await res.json();
+  setAdvice(data); setStatus(`回答取得 (${data.provider})`);
+  setAdviceLoading(false);
+};
+
+<section className="card reco full">…</section>  // RAG 推薦を全幅で表示
+<section className="card">…記事一覧を横方向リストで表示…</section>
+```
+
+**変わっていないこと**  
+- プロフィールスキーマ、アドバイス用プロンプトの構造、Fake/Live の分岐は 02 と同じ思想。  
+- FastAPI + Pydantic の型付け、フロントの fetch ベース API 呼び出しスタイルも踏襲。
+
 
 ## フロントの流れ
 1. プロフィールを入力して保存 → `/api/profile` PUT。
