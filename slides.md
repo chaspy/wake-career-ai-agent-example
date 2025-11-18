@@ -14,7 +14,7 @@ Takeshi Kondo (@chaspy)
 
 # エンジニアのための生成 AI 入門
 
-[](https://m.media-amazon.com/images/I/81mznlTdsuL._SL1500_.jpg)
+![エンジニアのための生成 AI 入門 表紙](https://m.media-amazon.com/images/I/81mznlTdsuL._SL1500_.jpg)
 
 今すぐご予約ください！！！！！！！！！１
 https://amzn.to/49m7MyF
