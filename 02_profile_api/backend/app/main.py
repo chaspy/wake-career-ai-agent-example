@@ -3,7 +3,8 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from openai import OpenAI, OpenAIError
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
 DATA_FILE = Path(__file__).resolve().parent / "profile.json"
@@ -103,17 +104,22 @@ def _call_openai(messages: list[dict[str, str]]) -> str:
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is not set")
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    client = OpenAI(api_key=api_key)
     try:
-        resp = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_tokens=400,
-            temperature=0.4,
+        llm = ChatOpenAI(model=model, api_key=api_key, temperature=0.4)
+        res = llm.invoke(
+            [
+                SystemMessage(content=messages[0]["content"]),
+                HumanMessage(content=messages[1]["content"]),
+            ]
         )
-    except OpenAIError as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"openai error: {e}")
-    return resp.choices[0].message.content or ""
+    content = res.content
+    if isinstance(content, list):
+        content = "".join(
+            chunk.get("text", "") if isinstance(chunk, dict) else str(chunk) for chunk in content
+        )
+    return str(content or "")
 
 
 @app.post("/api/profile/advice", response_model=AdviceResponse)

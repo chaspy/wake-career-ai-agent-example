@@ -9,7 +9,7 @@
 ## 01_bootstrap との実装差分（丁寧解説）
 - **LLM 呼び出しの位置づけ変更**: `/api/ping-llm` の単発プロンプト送信を削除し、プロフィールを踏まえた `/api/profile/advice` に置き換え。LLM へ渡す情報が「自由文」→「保存済みプロフィール + 質問」に進化。
 - **永続化の導入**: 01 はステートレスだったが、02 は `backend/app/profile.json` へ JSON 保存。未存在時はサンプル `WAKE Guest` を自動生成して UX を途切れさせない。
-- **依存ライブラリ**: 01 は `langchain_openai.ChatOpenAI` 経由だったが、02 は `openai` SDK の生チャット API に変更。キー未設定時はフェイク応答を返し、デバッグしやすくしている。
+- **依存ライブラリ**: LangChain の `ChatOpenAI` を継続利用。02 ではプロフィール文脈を組み立てるヘルパを追加し、`OPENAI_API_KEY` 未設定時はフェイク応答で落ちないようにした。
 - **health 応答**: `{"ok": true}` から `{"ok": true, "phase": "02_profile_api"}` に拡張し、フロントでフェーズ表示・疎通確認をしやすくした。
 - **フロント UI**: LLM ping フォームは撤去し、プロフィール編集フォーム＋「LLM にキャリア相談」セクションに差し替え。保存値を自動ロード/反映し、回答プロバイダー（openai/fake）も表示。
 - **スタイルの微調整**: `.shell` ラッパで横幅を `min(760px, 92vw)` にし、モバイルでも左右に余白を確保。カード/パネル構成は 01 のトーンを踏襲しつつ改修。
@@ -20,7 +20,7 @@
   - 新規 `/api/profile/advice` エンドポイント（119-130 行）。プロフィールをプロンプト化する `_build_prompt`、OpenAI 呼び出し `_call_openai`、キー未設定時のフェイク応答 `_fake_answer` を追加。
   - 依存を `openai` SDK に変更し、LangChain への依存を排除。
 - `backend/pyproject.toml` / `backend/requirements.txt` / `backend/uv.lock`
-  - 依存に `openai` を追加しロックを更新。01 では `langchain_openai` があり、02 では不要。
+  - 依存に `langchain-openai` を追加（01 も同ライブラリだが、02 はプロフィール向けプロンプト整形ヘルパとフェイク応答を含む構成に変化）。
 - `frontend/src/main.tsx`
   - 01 の「LLM に送る」フォームを撤去し、プロフィール入力フォームと保存・再読み込み、アドバイス取得ボタンを実装。
   - `askAdvice` 関数で `/api/profile/advice` を呼び、provider 表示と回答を `<pre>` に描画する処理を追加（144-173 行）。
