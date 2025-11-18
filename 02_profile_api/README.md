@@ -79,11 +79,60 @@
   - 01 では LLM 疎通のみだった説明を、02 ではプロフィール永続化＋アドバイス取得手順まで教材化。
 
 ## プロフィールを LLM に渡す流れ（02 の肝）
-1. **プロフィールを確保**: `_load_or_create_profile()`（backend/app/main.py）で `profile.json` を読み込み、無ければ `DEFAULT_PROFILE` を自動生成して返却。以降の処理は必ずプロフィール付きで進む。
-2. **要約してメッセージ化**: `_build_prompt()` が氏名・経験年数・現在/目標ロール・スキル・興味・ノートを日本語テキストにまとめ、`SystemMessage`（役割指示）と `HumanMessage`（プロフィール要約＋質問）を返す。
-3. **LangChain で呼び出し**: `_call_openai()` が `ChatOpenAI` を生成し、上記メッセージ配列をそのまま `invoke`。温度 0.4 / max_tokens 400 と控えめに設定しているので回答は端的。
-4. **フェイクにフォールバック**: `OPENAI_API_KEY` が無い場合は `_fake_answer()` が同じスキーマ（`provider`, `answer`）で返すため、フロントはプロバイダー表示を切り替えるだけで UX を維持。
-5. **エンドポイントで束ねる**: `/api/profile/advice` が 1〜4 をラップし、保存済みプロフィールを自動注入して LLM 応答を返す。クライアントは質問文字列だけ渡せば良い。
+
+### コード差分で見る
+```diff
+@@ backend/app/main.py @@
+ def _load_or_create_profile() -> ProfileResponse:
+   if not DATA_FILE.exists():
+     default = ProfileResponse(**DEFAULT_PROFILE.model_dump())
+     DATA_FILE.write_text(default.model_dump_json(indent=2, ensure_ascii=False))
+     return default
+   return ProfileResponse(**json.loads(DATA_FILE.read_text()))
+
+ def _build_prompt(profile, question):
+   profile_summary = f"...氏名: {profile.name}\\n経験年数: {profile.years}年...\\nスキル: {', '.join(profile.skills)}..."
+   system = "あなたは日本語で回答するキャリアコーチです。...箇条書きで400文字以内..."
+   user_prompt = f\"プロフィール:\\n{profile_summary}\\n\\n相談内容: {question}\"
+   return [
+     {"role": "system", "content": system},
+     {"role": "user", "content": user_prompt},
+   ]
+
+ def _call_openai(messages):
+   llm = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), api_key=os.getenv("OPENAI_API_KEY"), temperature=0.4)
+   res = llm.invoke([SystemMessage(content=messages[0]["content"]), HumanMessage(content=messages[1]["content"])])
+   return str(res.content or "")
+
+ @app.post("/api/profile/advice")
+ def get_profile_advice(payload):
+   profile = _load_or_create_profile()
+   messages = _build_prompt(profile, payload.question)
+   answer = _call_openai(messages) if os.getenv("OPENAI_API_KEY") else _fake_answer(profile, payload.question)
+   return AdviceResponse(provider="openai" if os.getenv("OPENAI_API_KEY") else "fake", answer=answer)
+```
+
+### 実例（リクエスト/レスポンス）
+1. プロフィールを保存（未保存なら自動生成されるので省略可）
+```bash
+curl -X PUT http://localhost:28089/api/profile \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice","years":6,"current_role":"Backend Engineer","target_role":"AI PM","skills":["Python","FastAPI"],"interests":["RAG","Career"],"notes":"LLM活用に興味"}'
+```
+2. アドバイスを取得
+```bash
+curl -X POST http://localhost:28089/api/profile/advice \
+  -H "Content-Type: application/json" \
+  -d '{"question":"次の3ヶ月でやるべきことは？"}'
+```
+3. 典型レスポンス（OpenAI キーありの場合）
+```json
+{
+  "provider": "openai",
+  "answer": "- プロダクト思考の強化として、社内のAI案件でPMロールを1タスク担当する\n- Python/FastAPIでミニAPIを作り、RAGを組み込んでPoC化する\n- 週1でAI PM事例をリサーチし、学びをノートにまとめて共有する"
+}
+```
+キー未設定なら `"provider": "fake"` でフォールバックし、同スキーマで返ります。
 
 ## できること（API）
 - `/api/health` … フェーズ確認
