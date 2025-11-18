@@ -95,3 +95,24 @@ make dev
 1. `make dev` で 48089/45073 を起動し、初期プロフィールのまま「おすすめを取得」を押す。
 2. `backend/app/routers/jobs.py` の `_fake_jobs` を実求人 API クライアントに差し替えると、UI はそのまま流用可能。
 3. LangChain 部分を拡張したい場合は `backend/app/rag/` 配下のモジュールを参照。FAISS の入替や再インデックスなどは 03 と同じ手順で OK。
+
+## LangGraph をどこで何のために使っているか
+- 役割: RAG 推薦の一連のステップ（クエリ生成 → 検索 → LLM で理由生成 → レスポンス成形）をステートマシンとして明示するために採用。失敗時にフェイク応答へフォールバックする分岐もここで管理。
+- 実装場所: `backend/app/rag/graph.py`
+- ノード構成（StateGraph）:
+  ```py
+  graph.add_node("build_query", _build_query)   # プロフィール/入力から検索クエリを組み立て
+  graph.add_node("retrieve", _retrieve)         # FAISS（Retriever）で上位 k を取得
+  graph.add_node("call_model", _call_model)     # live: ChatOpenAI へ投げる / no-key: offline_answer で理由生成
+  graph.add_node("respond", _respond)           # 空結果の埋め草や JSON 形に整形
+  graph.set_entry_point("build_query")
+  graph.add_edge("build_query", "retrieve")
+  graph.add_edge("retrieve", "call_model")
+  graph.add_edge("call_model", "respond")
+  graph.add_edge("respond", "__end__")
+  ```
+- LLM 呼び出し（live モードのみ）:
+  - `ChatOpenAI(model=settings.openai_model, temperature=0.2)` を使用。
+  - PydanticOutputParser（`LLMResponse`）で JSON 形式を強制し、推薦理由を3観点で返す。
+  - 成功しない場合や fake モードでは `offline_answer` が deterministic な理由文を生成。
+- ここで扱うのは「推薦カード生成」専用フロー。求人検索やフロントのステージ表示とは独立しており、LangGraph を足がかりにプランニング等のワークフローを後続フェーズに拡張できる構成。
