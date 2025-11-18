@@ -48,6 +48,7 @@ function App() {
   })
   const [question, setQuestion] = useState('次に身につけた方が良いスキルは？')
   const [advice, setAdvice] = useState<AdviceResponse | null>(null)
+  const [adviceLoading, setAdviceLoading] = useState(false)
 
   const loading = useMemo(() => status.includes('中') || status.includes('loading'), [status])
 
@@ -97,6 +98,7 @@ function App() {
   }
 
   const askAdvice = async () => {
+    setAdviceLoading(true)
     setStatus('LLM 呼び出し中...')
     const res = await fetch('/api/profile/advice', {
       method: 'POST',
@@ -110,6 +112,7 @@ function App() {
     const data: AdviceResponse = await res.json()
     setAdvice(data)
     setStatus(`回答取得 (${data.provider})`)
+    setAdviceLoading(false)
   }
 
   const updateForm = (key: keyof Profile, value: any) => {
@@ -190,7 +193,9 @@ function App() {
             <p className="muted">プロフィールをプロンプトに差し込み、fake/OpenAI で回答します。</p>
           </div>
           <div className="actions">
-            <button onClick={askAdvice}>アドバイスをもらう</button>
+            <button onClick={askAdvice} disabled={adviceLoading}>
+              {adviceLoading ? '呼び出し中…' : 'アドバイスをもらう'}
+            </button>
           </div>
         </div>
         <label>
@@ -203,7 +208,7 @@ function App() {
             <pre>{advice.answer}</pre>
           </article>
         ) : (
-          <p className="muted">まだアドバイスはありません</p>
+          <p className="muted">{adviceLoading ? 'LLM からの回答を待っています…' : 'まだアドバイスはありません'}</p>
         )}
       </section>
 
