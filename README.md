@@ -38,8 +38,6 @@ make dev   # backend:8089 / frontend:5173
 - Node.js 20 以上 / npm 10 以上
 - make
 
-## じっくり準備する手順（1 つずつ確認したい方向け）
-
 1. ツール確認: `git --version` / `node -v` / `npm -v` / `python3 --version` / `uv --version`
 2. リポジトリ取得:
    ```bash
@@ -64,14 +62,14 @@ make dev   # backend:8089 / frontend:5173
    - Health が `fake` と出れば OK。live にしたいときは `.env` にキーを入れて再起動。
 6. 停止: ターミナルで `Ctrl+C`。
 
-### トラブルシュート早見表
+## Trouble Shooting
 
 - `uv: command not found` → uv を入れてから `uv sync` を実行。
 - `Failed to spawn: uvicorn` → 依存未インストール。`cd backend && uv sync` を先に。
 - ポート競合 (5173/8089 使用中) → `BACKEND_PORT=9000 FRONTEND_PORT=5200 MODE=fake make dev` などで上書き。
 - RAG が 503 → seed 未実行。RAG があるステップで `cd backend && uv run python scripts/seed.py`。
 
-## フェーズ別の起動ポート
+### フェーズ別の起動ポート
 
 - 01_bootstrap: backend 18089 / frontend 15073
 - 02_profile_api: backend 28089 / frontend 25073
@@ -81,23 +79,13 @@ make dev   # backend:8089 / frontend:5173
 
 ※ それぞれ `make dev` で立ち上がります。複数フェーズを同時に起動する場合もポート衝突しません。
 
-## 各フェーズ共通の起動手順（uv sync 統一）
+### 各フェーズ共通の起動手順（uv sync 統一）
 
 以下のコマンドブロックを、対象フェーズのディレクトリ名とポートに置き換えて実行してください。
 
 ```bash
-# 例: 02_profile_api を backend 28089 / frontend 25073 で起動する場合
 cd 02_profile_api
 
-# backend 依存（uv sync が .venv を自動作成）
-cd backend && uv sync && cd ..
-
-# frontend 依存
-cd frontend && npm install && cd ..
-
-# 開発サーバ起動（ポートは上の表から対応する値をセット）
-BACKEND_PORT=28089 FRONTEND_PORT=25073 make dev
+make dev
 # ブラウザ: http://localhost:25073
 ```
-
-`BACKEND_PORT` / `FRONTEND_PORT` は上の表の値を使うか、都合にあわせて変更してください。uv が無い場合は `curl -LsSf https://astral.sh/uv/install.sh | sh` で導入できます。
