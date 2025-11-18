@@ -1,23 +1,19 @@
 # WAKE Career AI Agent (WIP)
 
-ローカルで Vite/React フロントと FastAPI バックエンドを並列起動できる最小スキャフォールドです。ステップを追うごとに機能が増え、最終的に「プロフィール + 記事/RAG + 求人 + プランニング」がそろいます。
-
-## だれ向けのガイドか
-- **初心者エンジニア / 学習者**: 手順をそのままコピペすれば動くよう、理由付きで並べています。
-- **ビジネス職・非エンジニア**: 「最低限これだけ」で動く 3 コマンドを先に示し、その後に詳しい説明を分けています。開発者がそばにいなくても読み進められるようにしました。
+ローカルで Vite/React フロントと FastAPI バックエンドを並列起動できる最小スキャフォールドです。ステップを追うごとに「プロフィール → 記事/RAG → 求人 → プランニング」と機能が増えていきます。
 
 ## フェーズはスナップショット方式
 - `01_bootstrap` → `02_profile_api` → `03_articles_ingest` → `04_recommend_rag` → `05_jobs_and_planning`（＝ルートと同等）の順に機能が積み上がります。
 - 各フォルダは「その時点の完成形」を丸ごと持つスナップショットです。**混ぜずに、動かしたいステップを単体で起動**してください。
 - 最新機能を一気に見たい人はリポジトリ直下（`backend/`, `frontend/`）を使えば OK です。
 
-## 最短 3 コマンド（前提: Git・Node・Python・uv 済み）
+## クイックスタート（前提: Git・Node・Python・uv 済み）
 ```bash
 git clone https://github.com/chaspy/wake-career-ai-agent-example.git
 cd wake-career-ai-agent-example
 MODE=fake make dev   # backend:8089 / frontend:5173
 ```
-ブラウザで http://localhost:5173 を開けば UI が動きます。OpenAI キーが無い場合でも fake モードで最後まで体験できます。
+ブラウザで http://localhost:5173 を開きます。OpenAI キーが無くても fake モードで一通り体験できます。
 
 ## 必須ツール
 
@@ -25,45 +21,36 @@ MODE=fake make dev   # backend:8089 / frontend:5173
 - Node.js 20 以上 / npm 10 以上
 - make
 
-## じっくり準備する手順（初心者・ビジネス職向けに丁寧め）
-1. **ツール確認**（約3分）
-   - `git --version` / `node -v` / `npm -v` / `python3 --version` / `uv --version`
-   - どれか無ければインストール（リンク: Git / Node.js v20+ / Python3.11+ / `curl -LsSf https://astral.sh/uv/install.sh | sh`）。
-
-2. **リポジトリを取得**（約1分）
+## じっくり準備する手順（1つずつ確認したい方向け）
+1. ツール確認: `git --version` / `node -v` / `npm -v` / `python3 --version` / `uv --version`
+2. リポジトリ取得:
    ```bash
    git clone https://github.com/chaspy/wake-career-ai-agent-example.git
    cd wake-career-ai-agent-example
    ```
-
-3. **環境ファイルを用意**（約1分）
+3. 環境ファイルを用意:
    ```bash
    cp .env.sample .env
-   # OpenAI キーがあれば OPENAI_API_KEY=sk-... を記入。無ければ空欄でOK（自動で fake モード）。
+   # OpenAI キーがあれば OPENAI_API_KEY=sk-... を記入。無ければ空欄でOK（fakeモード）。
    ```
-
-4. **依存インストール**（約3〜5分）
+4. 依存インストール:
    ```bash
    cd backend && uv sync && cd ..
    cd frontend && npm install && cd ..
    ```
-   - ここで Python 仮想環境が `backend/.venv` に作られます。
-
-5. **起動**（約1分）
+5. 起動:
    ```bash
    MODE=fake make dev
    ```
-   - ブラウザで http://localhost:5173 を開く。
-   - 画面左上の Health が `fake` と表示されれば成功。live にしたいときは `.env` にキーを入れて再起動。
-
-6. **止め方**
-   - ターミナルで `Ctrl+C` を押すだけ（バックエンド・フロントエンド両方が止まります）。
+   - ブラウザ: http://localhost:5173
+   - Health が `fake` と出ればOK。liveにしたいときは `.env` にキーを入れて再起動。
+6. 停止: ターミナルで `Ctrl+C`。
 
 ### トラブルシュート早見表
-- `uv: command not found` → uv をインストールしてから再度 `uv sync`。
+- `uv: command not found` → uv を入れてから `uv sync` を実行。
 - `Failed to spawn: uvicorn` → 依存未インストール。`cd backend && uv sync` を先に。
-- ポート競合（すでに 5173/8089 が使用中）→ `BACKEND_PORT=9000 FRONTEND_PORT=5200 MODE=fake make dev` のように上書き。
-- RAG が 503 を返す → seed 未実行。該当ステップ（03/04/ルート）で `cd backend && uv run python scripts/seed.py`。
+- ポート競合 (5173/8089使用中) → `BACKEND_PORT=9000 FRONTEND_PORT=5200 MODE=fake make dev` などで上書き。
+- RAG が 503 → seed 未実行。RAG があるステップで `cd backend && uv run python scripts/seed.py`。
 
 ## フェーズ別の起動ポート
 - 01_bootstrap: backend 18089 / frontend 15073
