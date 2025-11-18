@@ -212,28 +212,6 @@ function App() {
         )}
       </section>
 
-      <section className="card">
-        <div className="space-between">
-          <div>
-            <p className="eyebrow small">記事一覧</p>
-            <h3>ベクトル化済みの記事 100+ 件</h3>
-            <p className="muted">クリックで本文を開かず、そのまま RAG 用コンテキストに使います。</p>
-          </div>
-        </div>
-        <ul className="list horizontal">
-          {articles.length === 0 ? (
-            <p className="muted">まだ記事がありません。</p>
-          ) : (
-            articles.map((a) => (
-              <li key={a.slug}>
-                <span className="pill soft">{a.slug}</span>
-                <span className="link-text">{a.title}</span>
-              </li>
-            ))
-          )}
-        </ul>
-      </section>
-
       <section className="card reco full">
         <div className="space-between">
           <div>
@@ -272,6 +250,28 @@ function App() {
             ))
           )}
         </div>
+      </section>
+
+      <section className="card">
+        <div className="space-between">
+          <div>
+            <p className="eyebrow small">記事一覧</p>
+            <h3>ベクトル化済みの記事 100+ 件</h3>
+            <p className="muted">クリックで本文を開かず、そのまま RAG 用コンテキストに使います。</p>
+          </div>
+        </div>
+        <ul className="list horizontal">
+          {articles.length === 0 ? (
+            <p className="muted">まだ記事がありません。</p>
+          ) : (
+            articles.map((a) => (
+              <li key={a.slug}>
+                <span className="pill soft">{a.slug}</span>
+                <span className="link-text">{a.title}</span>
+              </li>
+            ))
+          )}
+        </ul>
       </section>
     </main>
   )
