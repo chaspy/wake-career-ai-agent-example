@@ -14,6 +14,21 @@
 - **フロント UI**: LLM ping フォームは撤去し、プロフィール編集フォーム＋「LLM にキャリア相談」セクションに差し替え。保存値を自動ロード/反映し、回答プロバイダー（openai/fake）も表示。
 - **スタイルの微調整**: `.shell` ラッパで横幅を `min(760px, 92vw)` にし、モバイルでも左右に余白を確保。カード/パネル構成は 01 のトーンを踏襲しつつ改修。
 
+### コードレベルの差分（ファイル別に一つずつ）
+- `backend/app/main.py`
+  - `/api/ping-llm` を削除し、`/api/profile` GET/PUT で JSON 永続化（64-66 行付近）。未保存時は `DEFAULT_PROFILE` を自動生成（33-42 行）。
+  - 新規 `/api/profile/advice` エンドポイント（119-130 行）。プロフィールをプロンプト化する `_build_prompt`、OpenAI 呼び出し `_call_openai`、キー未設定時のフェイク応答 `_fake_answer` を追加。
+  - 依存を `openai` SDK に変更し、LangChain への依存を排除。
+- `backend/pyproject.toml` / `backend/requirements.txt` / `backend/uv.lock`
+  - 依存に `openai` を追加しロックを更新。01 では `langchain_openai` があり、02 では不要。
+- `frontend/src/main.tsx`
+  - 01 の「LLM に送る」フォームを撤去し、プロフィール入力フォームと保存・再読み込み、アドバイス取得ボタンを実装。
+  - `askAdvice` 関数で `/api/profile/advice` を呼び、provider 表示と回答を `<pre>` に描画する処理を追加（144-173 行）。
+- `frontend/src/style.css`
+  - `.shell` レイアウトを新設し、左右マージンと最大幅を指定。01 の `.app-shell` 相当は使わず、02 用に薄く調整。
+- `README.md`
+  - 上記機能説明と差分解説を追加（本節）。01 では README に LLM 疎通のみを記載していたが、02 ではプロフィール保存・アドバイス取得・OpenAI キー設定方法まで網羅。
+
 ## できること（API）
 - `/api/health` … フェーズ確認
 - `/api/profile` … プロフィール保存/取得（JSON ファイル直書き）
