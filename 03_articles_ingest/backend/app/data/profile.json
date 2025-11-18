@@ -1,0 +1,9 @@
+{
+  "name": "Sample User",
+  "years": 5,
+  "current_role": "Backend Engineer",
+  "target_role": "AI Product Manager",
+  "skills": ["Python", "FastAPI", "LangChain"],
+  "interests": ["RAG", "Career Coaching"],
+  "notes": "demo profile seeded for phase03"
+}
