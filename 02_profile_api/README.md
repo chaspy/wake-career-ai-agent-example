@@ -80,7 +80,7 @@
 
 ## プロフィールを LLM に渡す流れ（02 の肝）
 
-### コード差分で見る
+### コード差分で見る（Python ハイライト付き）
 ```diff
 @@ backend/app/main.py @@
  def _load_or_create_profile() -> ProfileResponse:
@@ -91,17 +91,39 @@
    return ProfileResponse(**json.loads(DATA_FILE.read_text()))
 
  def _build_prompt(profile, question):
-   profile_summary = f"...氏名: {profile.name}\\n経験年数: {profile.years}年...\\nスキル: {', '.join(profile.skills)}..."
-   system = "あなたは日本語で回答するキャリアコーチです。...箇条書きで400文字以内..."
-   user_prompt = f\"プロフィール:\\n{profile_summary}\\n\\n相談内容: {question}\"
+   # プロフィールを日本語で要約
+   profile_summary = (
+     f"氏名: {profile.name}\n"
+     f"経験年数: {profile.years}年\n"
+     f"現在の役割: {profile.current_role}\n"
+     f"目標の役割: {profile.target_role}\n"
+     f"スキル: {', '.join(profile.skills) if profile.skills else 'なし'}\n"
+     f"興味: {', '.join(profile.interests) if profile.interests else 'なし'}\n"
+     f"ノート: {profile.notes or 'なし'}"
+   )
+   system = (
+     "あなたは日本語で回答するキャリアコーチです。"
+     "与えられたプロフィールを踏まえて、実行可能な次の一手を3つ以内で提案してください。"
+     "箇条書きで、最長でも400文字以内にまとめてください。"
+   )
+   user_prompt = f"プロフィール:\n{profile_summary}\n\n相談内容: {question}"
    return [
      {"role": "system", "content": system},
      {"role": "user", "content": user_prompt},
    ]
 
  def _call_openai(messages):
-   llm = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), api_key=os.getenv("OPENAI_API_KEY"), temperature=0.4)
-   res = llm.invoke([SystemMessage(content=messages[0]["content"]), HumanMessage(content=messages[1]["content"])])
+   llm = ChatOpenAI(
+     model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+     api_key=os.getenv("OPENAI_API_KEY"),
+     temperature=0.4,
+   )
+   res = llm.invoke(
+     [
+       SystemMessage(content=messages[0]["content"]),
+       HumanMessage(content=messages[1]["content"]),
+     ]
+   )
    return str(res.content or "")
 
  @app.post("/api/profile/advice")
