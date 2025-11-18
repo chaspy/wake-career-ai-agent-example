@@ -16,6 +16,19 @@ type Recommendation = {
 }
 type RecommendResponse = { recommendations: Recommendation[]; mode: string }
 
+type Profile = {
+  name: string
+  years: number
+  current_role: string
+  target_role: string
+  skills: string[]
+  interests: string[]
+  notes?: string | null
+}
+
+type ProfileResponse = Profile
+type AdviceResponse = { provider: string; answer: string }
+
 function App() {
   const [health, setHealth] = useState<Health | null>(null)
   const [articles, setArticles] = useState<ArticleSummary[]>([])
@@ -24,12 +37,33 @@ function App() {
   const [recs, setRecs] = useState<Recommendation[]>([])
   const [status, setStatus] = useState('')
 
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [form, setForm] = useState<Profile>({
+    name: '',
+    years: 0,
+    current_role: '',
+    target_role: '',
+    skills: [],
+    interests: [],
+    notes: '',
+  })
+  const [question, setQuestion] = useState('次に身につけた方が良いスキルは？')
+  const [advice, setAdvice] = useState<AdviceResponse | null>(null)
+
   const loading = useMemo(() => status.includes('中') || status.includes('loading'), [status])
 
   useEffect(() => {
     fetch('/api/health').then((r) => r.json()).then(setHealth)
     fetch('/api/articles').then((r) => r.json()).then(setArticles)
+    fetch('/api/profile')
+      .then((res) => (res.status === 404 ? null : res.json()))
+      .then((data) => data && setProfile(data))
+      .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (profile) setForm(profile)
+  }, [profile])
 
   const openArticle = async (slug: string) => {
     setStatus('読み込み中...')
@@ -58,6 +92,42 @@ function App() {
     setRecs(data.recommendations)
   }
 
+  const saveProfile = async () => {
+    setStatus('保存中...')
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    })
+    if (!res.ok) {
+      setStatus('保存に失敗しました')
+      return
+    }
+    const data: ProfileResponse = await res.json()
+    setProfile(data)
+    setStatus('保存しました')
+  }
+
+  const askAdvice = async () => {
+    setStatus('LLM 呼び出し中...')
+    const res = await fetch('/api/profile/advice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    })
+    if (!res.ok) {
+      setStatus('アドバイス取得に失敗しました（プロフィールを保存済みか確認）')
+      return
+    }
+    const data: AdviceResponse = await res.json()
+    setAdvice(data)
+    setStatus(`回答取得 (${data.provider})`)
+  }
+
+  const updateForm = (key: keyof Profile, value: any) => {
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
   return (
     <main className="app-shell">
       <header className="card hero">
@@ -71,6 +141,83 @@ function App() {
           <span className={`badge ${status ? 'success' : 'neutral'}`}>状態: {status || '待機中'}</span>
         </div>
       </header>
+
+      <section className="card profile-card">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow small">PROFILE</p>
+            <h2>プロフィールを編集</h2>
+            <p className="muted">01/02 の続き。保存するとアドバイスと RAG に反映されます。</p>
+          </div>
+          <div className="actions">
+            <button onClick={saveProfile}>保存</button>
+            <button className="ghost" onClick={() => profile && setForm(profile)}>
+              取り消し
+            </button>
+          </div>
+        </div>
+        <div className="profile-grid">
+          <label>
+            氏名
+            <input value={form.name} onChange={(e) => updateForm('name', e.target.value)} />
+          </label>
+          <label>
+            経験年数
+            <input type="number" value={form.years} onChange={(e) => updateForm('years', Number(e.target.value))} />
+          </label>
+          <label>
+            現在の役割
+            <input value={form.current_role} onChange={(e) => updateForm('current_role', e.target.value)} />
+          </label>
+          <label>
+            目標の役割
+            <input value={form.target_role} onChange={(e) => updateForm('target_role', e.target.value)} />
+          </label>
+          <label className="span2">
+            スキル（カンマ区切り）
+            <input
+              value={form.skills.join(', ')}
+              onChange={(e) => updateForm('skills', e.target.value.split(',').map((v) => v.trim()).filter(Boolean))}
+            />
+          </label>
+          <label className="span2">
+            興味（カンマ区切り）
+            <input
+              value={form.interests.join(', ')}
+              onChange={(e) => updateForm('interests', e.target.value.split(',').map((v) => v.trim()).filter(Boolean))}
+            />
+          </label>
+          <label className="span2">
+            ノート
+            <textarea value={form.notes ?? ''} onChange={(e) => updateForm('notes', e.target.value)} />
+          </label>
+        </div>
+      </section>
+
+      <section className="card advice-card">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow small">LLM ADVICE</p>
+            <h2>保存済みプロフィールでキャリア相談</h2>
+            <p className="muted">プロフィールをプロンプトに差し込み、fake/OpenAI で回答します。</p>
+          </div>
+          <div className="actions">
+            <button onClick={askAdvice}>アドバイスをもらう</button>
+          </div>
+        </div>
+        <label>
+          質問
+          <input value={question} onChange={(e) => setQuestion(e.target.value)} />
+        </label>
+        {advice ? (
+          <article className="card" style={{ padding: '1rem', background: '#f8fafc' }}>
+            <p className="muted">provider: {advice.provider}</p>
+            <pre>{advice.answer}</pre>
+          </article>
+        ) : (
+          <p className="muted">まだアドバイスはありません</p>
+        )}
+      </section>
 
       <section className="grid-three">
         <div className="card">
