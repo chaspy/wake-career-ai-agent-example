@@ -30,6 +30,7 @@ backend/data/wake_articles/*
 !backend/data/wake_articles/*.md
 !backend/data/wake_articles/README.md
 backend/app.db
+*/backend/app/profile.json
 
 # macOS
 .DS_Store
