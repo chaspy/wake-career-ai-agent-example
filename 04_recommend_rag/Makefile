@@ -25,10 +25,10 @@ endif
 
 dev:
 	$(MAKE) backend &
-	cd $(FRONTEND_DIR) && npm install && PORT=$(FRONTEND_PORT) npm run dev
+	cd $(FRONTEND_DIR) && npm install && VITE_API_BASE="http://localhost:$(BACKEND_PORT)" npm run dev -- --host 0.0.0.0 --port $(FRONTEND_PORT)
 
 backend:
 	cd $(BACKEND_DIR) && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port $(BACKEND_PORT)
 
 frontend:
-	cd $(FRONTEND_DIR) && npm install && PORT=$(FRONTEND_PORT) npm run dev
+	cd $(FRONTEND_DIR) && npm install && VITE_API_BASE="http://localhost:$(BACKEND_PORT)" npm run dev -- --host 0.0.0.0 --port $(FRONTEND_PORT)
