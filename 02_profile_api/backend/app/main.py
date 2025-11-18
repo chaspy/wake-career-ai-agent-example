@@ -1,7 +1,10 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from pathlib import Path
 import json
+import os
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from openai import OpenAI, OpenAIError
+from pydantic import BaseModel
 
 DATA_FILE = Path(__file__).resolve().parent / "profile.json"
 
@@ -17,6 +20,26 @@ class Profile(BaseModel):
 class ProfileResponse(Profile):
     pass
 
+
+class AdviceRequest(BaseModel):
+    question: str = "次にどんな行動を取れば良いですか？"
+
+
+class AdviceResponse(BaseModel):
+    provider: str
+    answer: str
+
+
+DEFAULT_PROFILE = Profile(
+    name="WAKE Guest",
+    years=5,
+    current_role="Product Generalist",
+    target_role="AI Product Manager",
+    skills=["Facilitation", "LLM Prompting", "Career Coaching"],
+    interests=["WAKE Articles", "1on1", "RAG"],
+    notes="初期状態のサンプルプロフィールです。",
+)
+
 app = FastAPI(title="02_profile_api")
 
 @app.get("/api/health")
@@ -25,12 +48,83 @@ def health():
 
 @app.get("/api/profile", response_model=ProfileResponse)
 def get_profile():
-    if not DATA_FILE.exists():
-        raise HTTPException(status_code=404, detail="profile not set")
-    data = json.loads(DATA_FILE.read_text())
-    return ProfileResponse(**data)
+    return _load_or_create_profile()
 
 @app.put("/api/profile", response_model=ProfileResponse)
 def upsert_profile(payload: Profile):
     DATA_FILE.write_text(payload.model_dump_json(indent=2, ensure_ascii=False))
     return ProfileResponse(**payload.model_dump())
+
+
+def _load_or_create_profile() -> ProfileResponse:
+    if not DATA_FILE.exists():
+        default = ProfileResponse(**DEFAULT_PROFILE.model_dump())
+        DATA_FILE.write_text(default.model_dump_json(indent=2, ensure_ascii=False))
+        return default
+    data = json.loads(DATA_FILE.read_text())
+    return ProfileResponse(**data)
+
+
+def _build_prompt(profile: ProfileResponse, question: str) -> list[dict[str, str]]:
+    profile_summary = (
+        f"氏名: {profile.name}\n"
+        f"経験年数: {profile.years}年\n"
+        f"現在の役割: {profile.current_role}\n"
+        f"目標の役割: {profile.target_role}\n"
+        f"スキル: {', '.join(profile.skills) if profile.skills else 'なし'}\n"
+        f"興味: {', '.join(profile.interests) if profile.interests else 'なし'}\n"
+        f"ノート: {profile.notes or 'なし'}"
+    )
+    system = (
+        "あなたは日本語で回答するキャリアコーチです。"
+        "与えられたプロフィールを踏まえて、実行可能な次の一手を3つ以内で提案してください。"
+        "箇条書きで、最長でも400文字以内にまとめてください。"
+    )
+    user_prompt = f"プロフィール:\n{profile_summary}\n\n相談内容: {question}"
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_prompt},
+    ]
+
+
+def _fake_answer(profile: ProfileResponse, question: str) -> str:
+    keywords = [*(profile.skills or []), *(profile.interests or [])]
+    base = (
+        f"{profile.name}さん向けのラフな提案です。\n"
+        f"- 目標ロール「{profile.target_role}」に近い案件/記事を週1で調べる\n"
+        f"- {profile.current_role}の経験を活かしつつ、{', '.join(keywords[:2]) or '関連分野'}を深堀りする\n"
+        f"- 次の行動: {question}"
+    )
+    return base
+
+
+def _call_openai(messages: list[dict[str, str]]) -> str:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is not set")
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    client = OpenAI(api_key=api_key)
+    try:
+        resp = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=400,
+            temperature=0.4,
+        )
+    except OpenAIError as e:
+        raise HTTPException(status_code=502, detail=f"openai error: {e}")
+    return resp.choices[0].message.content or ""
+
+
+@app.post("/api/profile/advice", response_model=AdviceResponse)
+def get_profile_advice(payload: AdviceRequest):
+    profile = _load_or_create_profile()
+    messages = _build_prompt(profile, payload.question)
+    api_key = os.getenv("OPENAI_API_KEY")
+    if api_key:
+        answer = _call_openai(messages)
+        provider = "openai"
+    else:
+        answer = _fake_answer(profile, payload.question)
+        provider = "fake"
+    return AdviceResponse(provider=provider, answer=answer)

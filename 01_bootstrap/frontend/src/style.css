@@ -1,14 +1,152 @@
-body { font-family: sans-serif; background: #f8fafc; margin: 0; }
-main.shell { max-width: 720px; margin: 2rem auto; padding: 1.5rem; background: #fff; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 1rem; }
-textarea { width: 100%; min-height: 100px; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; }
-button { width: fit-content; padding: 0.6rem 1rem; border-radius: 8px; border: none; background: #2563eb; color: #fff; cursor: pointer; }
-pre.reply {
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at 10% 20%, #e0f2fe, #f8fafc 45%);
+  color: #0f172a;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 2rem 1rem 3rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.6rem;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+}
+
+.eyebrow {
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6366f1;
+  margin: 0;
+  font-weight: 700;
+}
+
+.eyebrow.small {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: #94a3b8;
+}
+
+.muted {
+  color: #64748b;
+}
+
+.status-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.badge {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.badge.neutral { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+.badge.success { background: #ecfdf3; color: #166534; border-color: #bbf7d0; }
+.badge.live { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+
+.grid-two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+textarea,
+input {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #f8fafc;
+}
+
+textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+button {
+  width: fit-content;
+  padding: 0.75rem 1.1rem;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.25);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.reply-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reply-box {
   background: #0f172a;
   color: #e2e8f0;
   padding: 1rem;
-  border-radius: 8px;
-  min-height: 80px;
-  white-space: pre-wrap; /* 改行を保持しつつ折り返しも有効にする */
-  word-break: break-word; /* 日本語などスペース無しでも折り返す */
+  border-radius: 12px;
+  min-height: 140px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'JetBrains Mono', 'Fira Code', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  margin: 0;
 }
-.muted { color: #64748b; }
+
+.helper {
+  font-size: 0.95rem;
+  color: #475569;
+  margin: 0;
+}

@@ -1,6 +1,6 @@
 # 02_profile_api
 
-ヘルスチェックだけだった 01 に「プロフィールの保存/取得」を追加。LLM 依存なしで動きます。
+ヘルスチェックだけだった 01 に「プロフィールの保存/取得」を追加し、保存済みプロフィールを LLM に渡して簡易アドバイスを返せるようにしました（OpenAI キーなしでもフェイク応答で動作）。
 
 ## 前ステップとの違い
 - 追加: `/api/profile` GET/PUT。プロフィールをファイル永続化（デフォルト JSON、後続ステップで DB 切替を導入）。
@@ -9,6 +9,8 @@
 ## できること（API）
 - `/api/health` … フェーズ確認
 - `/api/profile` … プロフィール保存/取得（JSON ファイル直書き）
+- `/api/profile/advice` … 保存済みプロフィールをプロンプトに埋め込み、LLM からキャリアアドバイスを取得（`OPENAI_API_KEY` 未設定時はフェイク生成）
+  - プロフィール未設定でも初回アクセス時にサンプル（WAKE Guest）を自動生成するので、そのまま試せます。
 
 ## コードの見どころ
 - backend: `app/main.py` で Pydantic モデルを定義し、ローカル JSON (`profile.json`) へ読み書き。
@@ -28,3 +30,10 @@ cd frontend && npm install && cd ..
 make dev
 ```
 デフォルトポートは backend 28089 / frontend 25073。競合する場合は `BACKEND_PORT` / `FRONTEND_PORT` を上書きしてください。
+
+### OpenAI を使う場合
+環境変数に API キーをセットしてください（モデルは `OPENAI_MODEL` で上書き可、デフォルト `gpt-4o-mini`）。
+```bash
+export OPENAI_API_KEY=sk-xxxxx
+export OPENAI_MODEL=gpt-4o-mini  # 省略可
+```

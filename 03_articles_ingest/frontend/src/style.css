@@ -1,10 +1,177 @@
-body { font-family: 'Inter', sans-serif; background: #f8fafc; margin: 0; }
-main.shell { max-width: 960px; margin: 2rem auto; padding: 1.5rem; background: #fff; border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 1rem; }
-.grid { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; }
-.link { background: none; border: none; color: #2563eb; cursor: pointer; text-align: left; padding: 0; }
-pre { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 10px; white-space: pre-wrap; }
-.muted { color: #64748b; }
-.stack { display: flex; flex-direction: column; gap: 12px; }
-.gap-sm { gap: 8px; }
-.card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; background: #f8fafc; }
-.space-between { display: flex; justify-content: space-between; align-items: center; }
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at 14% 18%, #e0f2fe, #f8fafc 45%);
+  color: #0f172a;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 2rem 1rem 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+}
+
+.eyebrow {
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6366f1;
+  margin: 0;
+  font-weight: 700;
+}
+
+.eyebrow.small {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: #94a3b8;
+}
+
+.muted {
+  color: #64748b;
+}
+
+.status-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.badge {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.badge.neutral { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+.badge.success { background: #ecfdf3; color: #166534; border-color: #bbf7d0; }
+
+.grid-three {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+input {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #f8fafc;
+}
+
+button {
+  width: fit-content;
+  padding: 0.7rem 1.05rem;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+button:disabled { opacity: 0.65; cursor: not-allowed; box-shadow: none; }
+
+.link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  font-weight: 600;
+}
+
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'JetBrains Mono', 'Fira Code', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  margin: 0;
+  min-height: 150px;
+}
+
+.card.reco {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.space-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.score {
+  background: #2563eb;
+  color: #fff;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  font-weight: 700;
+}
