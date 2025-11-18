@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -18,6 +19,7 @@ ARTICLES_DIR = DATA_DIR / "articles"
 VSTORE_DIR = DATA_DIR / "vectorstore"
 VSTORE_DIR.mkdir(parents=True, exist_ok=True)
 ARTICLES_DIR.mkdir(parents=True, exist_ok=True)
+PROFILE_FILE = DATA_DIR / "profile.json"
 
 
 class Health(BaseModel):
@@ -25,6 +27,20 @@ class Health(BaseModel):
     phase: str
     mode: str
     provider: str
+
+
+class Profile(BaseModel):
+    name: str
+    years: int
+    current_role: str
+    target_role: str
+    skills: List[str] = Field(default_factory=list)
+    interests: List[str] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class ProfileResponse(Profile):
+    pass
 
 
 class ArticleSummary(BaseModel):
@@ -55,6 +71,15 @@ class RecommendationRequest(BaseModel):
 class RecommendationResponse(BaseModel):
     recommendations: List[Recommendation]
     mode: str = "fake"
+
+
+class AdviceRequest(BaseModel):
+    question: str = Field("次にどんな行動を取れば良いですか？", min_length=1)
+
+
+class AdviceResponse(BaseModel):
+    provider: str
+    answer: str
 
 
 app = FastAPI(title="03_articles_rag", version="0.3.0")
@@ -96,6 +121,19 @@ def health() -> Health:
     return Health(ok=True, phase="03_articles_rag", mode=runtime_mode(), provider=provider_name())
 
 
+@app.get("/api/profile", response_model=ProfileResponse)
+def get_profile():
+    if not PROFILE_FILE.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="profile not set")
+    return _load_profile_or_404()
+
+
+@app.put("/api/profile", response_model=ProfileResponse)
+def upsert_profile(payload: Profile):
+    PROFILE_FILE.write_text(payload.model_dump_json(indent=2, ensure_ascii=False), encoding="utf-8")
+    return ProfileResponse(**payload.model_dump())
+
+
 @app.get("/api/articles", response_model=List[ArticleSummary])
 def list_articles():
     return [_load_article(path, body=False) for path in sorted(ARTICLES_DIR.glob("*.md"))]
@@ -134,6 +172,19 @@ def recommend(payload: RecommendationRequest) -> RecommendationResponse:
     return RecommendationResponse(recommendations=recs, mode=runtime_mode())
 
 
+@app.post("/api/profile/advice", response_model=AdviceResponse)
+def get_profile_advice(payload: AdviceRequest) -> AdviceResponse:
+    profile = _load_profile_or_404()
+    messages = _build_prompt(profile, payload.question)
+    if os.getenv("OPENAI_API_KEY"):
+        answer = _call_llm(messages)
+        provider = "openai"
+    else:
+        answer = _fake_answer(profile, payload.question)
+        provider = "fake"
+    return AdviceResponse(provider=provider, answer=answer)
+
+
 # ---------------------------------------------------------------------------
 # Internal
 # ---------------------------------------------------------------------------
@@ -166,6 +217,52 @@ def _make_reasons(text: str, query: str) -> List[str]:
     return [out.content]
 
 
+def _load_profile_or_404() -> ProfileResponse:
+    if not PROFILE_FILE.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="profile not set")
+    data = json.loads(PROFILE_FILE.read_text(encoding="utf-8"))
+    return ProfileResponse(**data)
+
+
+def _build_prompt(profile: ProfileResponse, question: str) -> List[dict[str, str]]:
+    profile_summary = (
+        f"氏名: {profile.name}\n"
+        f"経験年数: {profile.years}年\n"
+        f"現在の役割: {profile.current_role}\n"
+        f"目標の役割: {profile.target_role}\n"
+        f"スキル: {', '.join(profile.skills) if profile.skills else 'なし'}\n"
+        f"興味: {', '.join(profile.interests) if profile.interests else 'なし'}\n"
+        f"ノート: {profile.notes or 'なし'}"
+    )
+    system = (
+        "あなたは日本語で回答するキャリアコーチです。"
+        "与えられたプロフィールを踏まえて、実行可能な次の一手を3つ以内で提案してください。"
+        "箇条書きで、最長でも400文字以内にまとめてください。"
+    )
+    user_prompt = f"プロフィール:\n{profile_summary}\n\n相談内容: {question}"
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_prompt},
+    ]
+
+
+def _fake_answer(profile: ProfileResponse, question: str) -> str:
+    keywords = [*(profile.skills or []), *(profile.interests or [])]
+    base = (
+        f"{profile.name}さん向けのラフな提案です。\n"
+        f"- 目標ロール『{profile.target_role}』に近い案件/記事を週1で調べる\n"
+        f"- {profile.current_role}の経験を活かしつつ、{', '.join(keywords[:2]) or '関連分野'}を深堀りする\n"
+        f"- 次の行動: {question}"
+    )
+    return base
+
+
+def _call_llm(messages: List[dict[str, str]]) -> str:
+    llm = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), temperature=0.4)
+    out = llm.invoke(messages)
+    return out.content or ""
+
+
 # ---------------------------------------------------------------------------
 # Utilities (used by seed.py as well)
 # ---------------------------------------------------------------------------
@@ -189,7 +286,7 @@ def ingest_articles(articles_dir: Path = ARTICLES_DIR, vector_dir: Path = VSTORE
                 }
             )
     # Build vector store
-    from langchain.schema import Document
+    from langchain_core.documents import Document
 
     vs = FAISS.from_documents([Document(**d) for d in docs], _embedding_fn())
     vs.save_local(str(vector_dir))
