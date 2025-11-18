@@ -99,7 +99,8 @@ def provider_name() -> str:
 
 @lru_cache(maxsize=1)
 def get_vectorstore() -> FAISS:
-    index_file = VSTORE_DIR / "faiss.index"
+    # langchain FAISS.save_local stores index as index.faiss / index.pkl by default
+    index_file = VSTORE_DIR / "index.faiss"
     if not index_file.exists():
         raise FileNotFoundError("vectorstore not seeded; run `uv run python scripts/seed.py`")
     return FAISS.load_local(str(VSTORE_DIR), _embedding_fn(), allow_dangerous_deserialization=True)
