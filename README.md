@@ -1,11 +1,23 @@
 # WAKE Career AI Agent (WIP)
 
-ローカルで Vite/React フロントと FastAPI バックエンドを並列起動できる最小スキャフォールドです。Step 1 ではプロフィール API と SQLite/JSON の永続化を追加しました。今後のステップで RAG 推薦機能や LangGraph を実装していきます。
+ローカルで Vite/React フロントと FastAPI バックエンドを並列起動できる最小スキャフォールドです。ステップを追うごとに機能が増え、最終的に「プロフィール + 記事/RAG + 求人 + プランニング」がそろいます。
+
+## だれ向けのガイドか
+- **初心者エンジニア / 学習者**: 手順をそのままコピペすれば動くよう、理由付きで並べています。
+- **ビジネス職・非エンジニア**: 「最低限これだけ」で動く 3 コマンドを先に示し、その後に詳しい説明を分けています。開発者がそばにいなくても読み進められるようにしました。
 
 ## フェーズはスナップショット方式
-- `01_bootstrap` → `02_profile_api` → `03_articles_ingest` → `04_recommend_rag` → `05_jobs_and_planning`（＝ルートと同等）の順に機能が積み上がるスナップショットです。
-- 各フォルダは「その時点の完成形」を丸ごと持っているため、組み合わせて使うのではなく **任意のステップを単体で起動** してください。
-- 最終形のコードはリポジトリ直下（`backend/`, `frontend/`）にあります。最新機能を試すときはルートを使い、途中のステップを学び直す際は該当フォルダを開いてください。
+- `01_bootstrap` → `02_profile_api` → `03_articles_ingest` → `04_recommend_rag` → `05_jobs_and_planning`（＝ルートと同等）の順に機能が積み上がります。
+- 各フォルダは「その時点の完成形」を丸ごと持つスナップショットです。**混ぜずに、動かしたいステップを単体で起動**してください。
+- 最新機能を一気に見たい人はリポジトリ直下（`backend/`, `frontend/`）を使えば OK です。
+
+## 最短 3 コマンド（前提: Git・Node・Python・uv 済み）
+```bash
+git clone https://github.com/chaspy/wake-career-ai-agent-example.git
+cd wake-career-ai-agent-example
+MODE=fake make dev   # backend:8089 / frontend:5173
+```
+ブラウザで http://localhost:5173 を開けば UI が動きます。OpenAI キーが無い場合でも fake モードで最後まで体験できます。
 
 ## 必須ツール
 
@@ -13,46 +25,45 @@
 - Node.js 20 以上 / npm 10 以上
 - make
 
-## ハンズオン参加者向け 事前準備チェックリスト（15–20分）
+## じっくり準備する手順（初心者・ビジネス職向けに丁寧め）
+1. **ツール確認**（約3分）
+   - `git --version` / `node -v` / `npm -v` / `python3 --version` / `uv --version`
+   - どれか無ければインストール（リンク: Git / Node.js v20+ / Python3.11+ / `curl -LsSf https://astral.sh/uv/install.sh | sh`）。
 
-1. Git と Node.js をインストール
-   - Git: https://git-scm.com/downloads
-   - Node.js: v20 以上（https://nodejs.org/）
-   - 動作確認: `git --version` / `node -v` / `npm -v`
-
-2. Python と uv を準備
-   - Python 3.11 以上を用意（3.12 でも可）
-   - uv インストール: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-   - 確認: `uv --version`
-
-3. リポジトリ取得
+2. **リポジトリを取得**（約1分）
    ```bash
    git clone https://github.com/chaspy/wake-career-ai-agent-example.git
    cd wake-career-ai-agent-example
    ```
 
-4. 環境ファイルを用意
+3. **環境ファイルを用意**（約1分）
    ```bash
    cp .env.sample .env
-   # .env を開き、OPENAI_API_KEY=sk-... を記入（キーが無い場合は空でOK）
-   # MODE は live のままで可。キー未設定なら自動で fake モードになります。
+   # OpenAI キーがあれば OPENAI_API_KEY=sk-... を記入。無ければ空欄でOK（自動で fake モード）。
    ```
 
-5. 依存インストール（uv sync を使用）
+4. **依存インストール**（約3〜5分）
    ```bash
-   cd backend && uv sync
-   cd ../frontend && npm install && cd ..
+   cd backend && uv sync && cd ..
+   cd frontend && npm install && cd ..
    ```
-   - uv が `backend/.venv` を自動生成し、`requirements.txt` の依存をインストールします。
+   - ここで Python 仮想環境が `backend/.venv` に作られます。
 
-6. 動作確認（余裕があれば）
+5. **起動**（約1分）
    ```bash
    MODE=fake make dev
-   # ブラウザで http://localhost:5173 を開き、Health が "fake" で OK 表示になることを確認
-   # Ctrl+C で終了
    ```
+   - ブラウザで http://localhost:5173 を開く。
+   - 画面左上の Health が `fake` と表示されれば成功。live にしたいときは `.env` にキーを入れて再起動。
 
-当日: `make dev` を実行し、ブラウザで http://localhost:5173 を開くだけで体験できます。OpenAI キーありの参加者は `.env` にキーを入れて live 推論、無い参加者は fake モードで UI 体験が可能です。
+6. **止め方**
+   - ターミナルで `Ctrl+C` を押すだけ（バックエンド・フロントエンド両方が止まります）。
+
+### トラブルシュート早見表
+- `uv: command not found` → uv をインストールしてから再度 `uv sync`。
+- `Failed to spawn: uvicorn` → 依存未インストール。`cd backend && uv sync` を先に。
+- ポート競合（すでに 5173/8089 が使用中）→ `BACKEND_PORT=9000 FRONTEND_PORT=5200 MODE=fake make dev` のように上書き。
+- RAG が 503 を返す → seed 未実行。該当ステップ（03/04/ルート）で `cd backend && uv run python scripts/seed.py`。
 
 ## フェーズ別の起動ポート
 - 01_bootstrap: backend 18089 / frontend 15073
