@@ -94,6 +94,40 @@ VITE_API_BASE=http://localhost:8089 npm run dev -- --host 0.0.0.0 --port 5173
 
 バックエンドとフロントエンドは別ターミナルで同時に走らせる必要があります。`01_bootstrap` などステップ別スナップショットを動かす場合も、対象ディレクトリ配下の `backend/` と `frontend/` に移動して同じ手順を踏めば OK です。
 
+### GitHub Codespaces を利用する場合
+
+uv のみ Install が必要です。ref: https://docs.astral.sh/uv/getting-started/installation/
+
+```
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+まず、backend を起動してください
+
+```
+cd backend/
+uv sync
+uv run uvicorn uvicorn_app:app --reload --host 0.0.0.0 --port 8089
+```
+
+その後、localhost:8989 にアクセスし、ブラウザに表示された url をメモしてください。
+
+例: `https://crispy-tribble-7gjr4vvgvp2p9w5-8089.app.github.dev`
+
+そして 8989 port を public にしてください。
+
+![](./port.png)
+
+次に frontend を起動します。最後の起動コマンドの際に、1 つ前に控えた url を入れてください。末尾のスラッシュはないようにしてください。
+
+```
+cd frontend
+npm install
+VITE_API_BASE=https://crispy-tribble-7gjr4vvgvp2p9w5-8089.app.github.dev npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+localhost:5173 でアクセスすると動作します。
+
 ### 補足
 
 Makefile を使える環境であれば、以下のコマンドで backend / frontend 両方立ち上がります。
