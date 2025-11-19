@@ -4,14 +4,20 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+
+# uv run は作業ディレクトリを変えないため、app パッケージを確実に import できるようにする
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
 from app.config import get_settings
 from app.db import database
 from app.rag import ingest
 from app.rag.vectorstore import VectorStoreError, persist_documents
 
-BASE_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_ARTICLE_DIR = BASE_DIR / "data" / "wake_articles"
 DEFAULT_VECTOR_DIR = BASE_DIR / "data" / "vectorstore"
 

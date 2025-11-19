@@ -21,12 +21,7 @@ class Settings(BaseSettings):
     mode: Literal["fake", "live"] = Field(default="live", alias="MODE")
     db_mode: Literal["sqlite", "json"] = Field(default="sqlite", alias="DB_MODE")
     database_url: str = Field(default=f"sqlite:///{BASE_BACKEND_DIR / 'app.db'}", alias="DATABASE_URL")
-    allowed_origins: list[str] = Field(
-        default_factory=lambda: [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-        ]
-    )
+    allowed_origins: list[str] = Field(default_factory=lambda: ["*"])
     sqlite_path: Path = Field(default=BASE_BACKEND_DIR / "app.db", alias="SQLITE_PATH")
     json_db_dir: Path = Field(default=BASE_BACKEND_DIR / "data/db", alias="JSON_DB_DIR")
     articles_dir: Path = Field(default=BASE_BACKEND_DIR / "data/wake_articles", alias="ARTICLES_DIR")
