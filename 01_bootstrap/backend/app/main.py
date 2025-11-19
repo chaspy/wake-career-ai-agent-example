@@ -2,19 +2,33 @@ from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 import os
+import logging
 from pathlib import Path
+
+logger = logging.getLogger("bootstrap")
+if not logger.handlers:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+logger.setLevel(logging.INFO)
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 ENV_FILES = [BASE_DIR / ".env", BASE_DIR.parent / ".env"]
-for env_file in ENV_FILES:
-    if env_file.exists():
-        for line in env_file.read_text().splitlines():
-            if not line or line.strip().startswith("#"):
-                continue
-            if "=" not in line:
+
+
+def _load_env():
+    for env_file in ENV_FILES:
+        if not env_file.exists():
+            continue
+        logger.info("loading env vars from %s", env_file)
+        for raw in env_file.read_text().splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
                 continue
             key, value = line.split("=", 1)
-            os.environ.setdefault(key.strip(), value.strip())
+            if key.strip() not in os.environ:
+                os.environ[key.strip()] = value.strip()
+
+
+_load_env()
 
 app = FastAPI(title="Bootstrap API")
 
@@ -49,7 +63,9 @@ def ping_llm(payload: PingRequest):
     api_key = os.getenv("OPENAI_API_KEY")
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     if not api_key:
+        logger.warning("OPENAI_API_KEY not set; falling back to fake response")
         return PingResponse(reply="(fake) LLMキー未設定のためダミー応答です。", mode="fake")
+    logger.info("calling OpenAI model=%s", model)
     llm = ChatOpenAI(model=model, api_key=api_key, temperature=0)
     out = llm.invoke([{"role":"user","content": payload.prompt}])
     return PingResponse(reply=str(out.content), mode="live")
