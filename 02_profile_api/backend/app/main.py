@@ -8,8 +8,10 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
-BASE_DIR = Path(__file__).resolve().parents[1]
-ENV_FILES = [BASE_DIR / ".env", BASE_DIR.parent / ".env"]
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+STEP_DIR = BACKEND_DIR.parent
+REPO_ROOT = STEP_DIR.parent
+ENV_FILES = [BACKEND_DIR / ".env", STEP_DIR / ".env", REPO_ROOT / ".env"]
 for env_file in ENV_FILES:
     if env_file.exists():
         for line in env_file.read_text().splitlines():
