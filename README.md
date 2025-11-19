@@ -96,6 +96,8 @@ VITE_API_BASE=http://localhost:8089 npm run dev -- --host 0.0.0.0 --port 5173
 
 ### GitHub Codespaces を利用する場合
 
+まず repository を fork してください。
+
 uv のみ Install が必要です。ref: https://docs.astral.sh/uv/getting-started/installation/
 
 ```
