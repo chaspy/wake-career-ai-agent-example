@@ -23,7 +23,7 @@
 ### 推奨環境
 
 - 対象 OS は macOS または Linux を推奨しています。Windows ネイティブ環境での動作保証は無いため、Windows ユーザは WSL2 上での実行を前提にしてください。
-- 現時点（2025/11/19 時点）で動作確認できているのは GitHub Codespaces と macOS のみです。その他の環境では依存パッケージやパス設定に差異がある可能性があります。
+- 現時点（2025/11/19 時点）で動作確認できているのは [GitHub Codespaces](https://github.com/codespaces) と macOS のみです。その他の環境では依存パッケージやパス設定に差異がある可能性があります。
 
 ## QuickStart
 
