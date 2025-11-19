@@ -71,8 +71,8 @@ Frontend と Backend 双方で起動してください。
 cd backend
 uv sync  # 依存インストールと仮想環境作成
 # RAG/求人ステップを触る場合は初回だけベクトルストアを生成
-DB_MODE=sqlite uv run python scripts/seed.py
-BACKEND_PORT=8089 uv run uvicorn uvicorn_app:app --reload --host 0.0.0.0 --port ${BACKEND_PORT}
+uv run scripts/seed.py # ルートでの完成版、もしくは 03 以降の実装で必要
+uv run uvicorn uvicorn_app:app --reload --host 0.0.0.0 --port 8089
 ```
 
 - `MODE` を `fake` にしておけば OpenAI API キーなしでデモデータを返せます。実運用したい場合は `.env` と同じ値（例: `live`）に揃えてください。
@@ -116,7 +116,7 @@ cp .env.sample .env
 ```
 cd backend/
 uv sync
-uv run scripts/seed.py
+uv run scripts/seed.py # ルートでの完成版、もしくは 03 以降の実装で必要
 uv run uvicorn uvicorn_app:app --reload --host 0.0.0.0 --port 8089
 ```
 
