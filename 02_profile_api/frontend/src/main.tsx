@@ -19,20 +19,20 @@ type AdviceResponse = { provider: string; answer: string }
 type Health = { ok: boolean; phase: string }
 
 async function fetchHealth(): Promise<Health> {
-  const res = await fetch('/api/health')
+  const res = await fetch(apiUrl('/api/health'))
   if (!res.ok) throw new Error('health failed')
   return res.json()
 }
 
 async function fetchProfile(): Promise<ProfileResponse | null> {
-  const res = await fetch('/api/profile')
+  const res = await fetch(apiUrl('/api/profile'))
   if (res.status === 404) return null
   if (!res.ok) throw new Error('profile failed')
   return res.json()
 }
 
 async function saveProfile(data: Profile): Promise<ProfileResponse> {
-  const res = await fetch('/api/profile', {
+  const res = await fetch(apiUrl('/api/profile'), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -41,8 +41,15 @@ async function saveProfile(data: Profile): Promise<ProfileResponse> {
   return res.json()
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE || ''
+
+function apiUrl(path: string) {
+  if (!API_BASE) return path
+  return `${API_BASE.replace(/\/$/, '')}${path}`
+}
+
 async function askAdvice(question: string): Promise<AdviceResponse> {
-  const res = await fetch('/api/profile/advice', {
+  const res = await fetch(apiUrl('/api/profile/advice'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question }),
