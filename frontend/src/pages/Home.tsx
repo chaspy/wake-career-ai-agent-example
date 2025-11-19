@@ -9,6 +9,7 @@ import { AgentActivity } from '../components/AgentActivity'
 import {
   fetchArticle,
   fetchHealth,
+  fetchPlan,
   fetchProfile,
   fetchRecommendations,
   saveProfile,
@@ -19,18 +20,11 @@ import type {
   HealthResponse,
   JobSearchResponse,
   JobSummary,
+  PlanReport,
   Profile,
   ProfileResponse,
   Recommendation,
 } from '../lib/types'
-
-type PlanReport = {
-  profileInsights: string[]
-  careerOptions: { title: string; rationale: string; citation?: string; distance: string; risk: string; next: string }[]
-  learning: string[]
-  actions: string[]
-  selfCheck: string[]
-}
 
 export function Home() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
@@ -113,73 +107,6 @@ const [articleError, setArticleError] = useState<string | null>(null)
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-  const buildPlanReport = (recs: Recommendation[], profile: Profile | null): PlanReport => {
-    const profileInsights = [
-      `あなたは「${profile?.current_role ?? '未入力'}」として ${profile?.years ?? 0} 年の経験を持ち、目標は「${profile?.target_role ?? '未入力'}」。`,
-      `主力スキルは ${(profile?.skills ?? []).join(' / ') || '（未入力）'}、興味は ${(profile?.interests ?? []).join(' / ') || '（未入力）'}。`,
-      'これらを踏まえ、次の3つの進路オプションと短期プランを提示します。',
-    ]
-
-    const firstRec = recs[0]
-    const secondRec = recs[1]
-    const firstThreeRecs = recs.slice(0, 3)
-    const careerOptions = [
-      {
-        title: 'オプション1: SRE/プラットフォームを極めてリードロールへ',
-        rationale:
-          '現職スキルを軸に信頼できる成果を積み上げ、短期でテックリード・EMに昇格するルート。信頼性・生産性指標を改善する実績が鍵。',
-        citation: firstRec?.citations?.[0]?.source_url,
-        distance: '短',
-        risk: '低',
-        next: '直近3ヶ月でSLO改善と自動化成果をまとめ、社内外で共有する',
-      },
-      {
-        title: 'オプション2: EM/CTO候補として組織スケールに軸足を移す',
-        rationale:
-          'マネジメントと技術意思決定を両立し、1→10/10→100フェーズの組織設計を経験するルート。採用・評価・技術負債返済の設計が必須。',
-        citation: secondRec?.citations?.[0]?.source_url,
-        distance: '中',
-        risk: '中',
-        next: 'チームヘルス指標と技術負債の棚卸しを行い、90日改善ロードマップを提示する',
-      },
-      {
-        title: 'オプション3: AIプロダクト／MLOpsへピボットして市場価値を上げる',
-        rationale:
-          '既存のSRE/インフラ経験をAI基盤・MLOpsに接続し、生成AIプロダクトの信頼性/コスト最適化を担うルート。新領域だが需要成長率が高い。',
-        citation: recs[2]?.citations?.[0]?.source_url,
-        distance: '中〜長',
-        risk: '中',
-        next: '社内PoCかOSSで小規模なLLM推論基盤を構築し、コストとSLOを計測したレポートを作成する',
-      },
-    ]
-
-    const learning = [
-      firstThreeRecs[0]
-        ? `「${firstThreeRecs[0].title}」を読み、引用部分と学びを3項目メモ（URL: ${firstThreeRecs[0].url})`
-        : '推薦された記事を1本選び、引用と学びを3項目メモ',
-      firstThreeRecs[1]
-        ? `「${firstThreeRecs[1].title}」で対比し、類似/相違を1枚のスライドに整理`
-        : '比較用の記事をもう1本選び、違いを1枚に整理',
-      '週1回アウトプット（社内ナレッジ/ブログ/デモ）で学びを可視化',
-    ]
-
-    const actions = [
-      profile?.skills?.[0]
-        ? `${profile.skills[0]} を用いたミニプロジェクトを2週間でリリース（GitHub + READMEで学びを書く）`
-        : '主力スキルでミニプロジェクトを2週間以内にリリース',
-      '推薦記事の引用を使って「過去-現在-未来」の3分ピッチ原稿を作成し録音でセルフレビュー',
-      '求人要件から不足スキルを3つ抽出し、カレンダーに学習ブロックを配置',
-    ]
-
-    const selfCheck = [
-      '1週目: 推薦記事1本の引用メモと3分ピッチ下書きができたか？',
-      '2週目: ミニプロジェクトを公開し、READMEに学びを書いたか？',
-      '4週目: 受けたい求人2社を決め、職務経歴書をそれに合わせて更新したか？',
-    ]
-
-    return { profileInsights, careerOptions, learning, actions, selfCheck }
-  }
-
   const logActivity = (message: string) => {
     const ts = new Date().toLocaleTimeString('ja-JP', { hour12: false })
     setActivityLogs((prev) => [`${ts} ${message}`, ...prev].slice(0, 40))
@@ -239,20 +166,40 @@ const [articleError, setArticleError] = useState<string | null>(null)
         logActivity('求人: 完了')
       }
 
-      // Planner agent
-      setPlannerStage('plan')
-      logActivity('プランニング: プロファイル/推薦/求人を読み込み')
-      await sleep(80)
-      const report = buildPlanReport(recoResponse.recommendations, readyProfile)
-      setPlannerStage('synthesize')
-      logActivity('プランニング: 要約と優先順位付け中')
-      await sleep(120)
-      setPlanReport(report)
-      setPlannerStage('validate')
-      logActivity('プランニング: 自己検証チェックを追加中')
-      await sleep(120)
-      setPlannerStage('done')
-      logActivity('プランニング: 完了、プランボード更新')
+      if (recoResponse.recommendations.length > 0) {
+        setPlannerStage('plan')
+        logActivity('プランニング: LangGraph エージェントを起動')
+        try {
+          const planResponse = await fetchPlan({
+            profile: readyProfile ?? undefined,
+            recommendations: recoResponse.recommendations,
+            jobs: jobResponse.jobs,
+          })
+          if (planResponse.logs.length > 0) {
+            planResponse.logs.forEach((entry) => logActivity(`Planner: ${entry}`))
+          }
+          setPlannerStage('synthesize')
+          logActivity('プランニング: 要約と優先順位付け中')
+          setPlanReport({
+            profileInsights: planResponse.profileInsights,
+            careerOptions: planResponse.careerOptions,
+            learning: planResponse.learning,
+            actions: planResponse.actions,
+            selfCheck: planResponse.selfCheck,
+          })
+          setPlannerStage('validate')
+          logActivity('プランニング: 自己検証チェックを追加中')
+          setPlannerStage('done')
+          logActivity('プランニング: 完了、プランボード更新')
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'プラン生成に失敗しました'
+          setPlannerStage('error')
+          setPlannerError(message)
+          logActivity(`プランニングでエラー: ${message}`)
+        }
+      } else {
+        setPlannerStage('idle')
+      }
     } catch (err) {
       setRecoStage('error')
       setRecoError(err instanceof Error ? err.message : '推薦の取得に失敗しました')

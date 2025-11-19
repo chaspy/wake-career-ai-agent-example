@@ -94,6 +94,18 @@ VITE_API_BASE=http://localhost:8089 npm run dev -- --host 0.0.0.0 --port 5173
 
 バックエンドとフロントエンドは別ターミナルで同時に走らせる必要があります。`01_bootstrap` などステップ別スナップショットを動かす場合も、対象ディレクトリ配下の `backend/` と `frontend/` に移動して同じ手順を踏めば OK です。
 
+#### LangGraph プランニング API
+
+- `/api/plan` に `profile`, `recommendations`, `jobs` を渡すと、LangGraph でプロフィール分析→キャリア選択肢→学習/アクション/自己検証チェックを生成します。
+- `MODE=fake` ではサンプルテンプレートを返し、`MODE=live` かつ `OPENAI_API_KEY` 設定時は OpenAI (既定 `gpt-4o-mini`) で実際に生成します。
+- 例:
+  ```bash
+  curl -X POST http://localhost:8089/api/plan \
+    -H "Content-Type: application/json" \
+    -d '{"recommendations":[{"id":"rec-1","title":"WAKE Article","url":"https://wake-career.jp","score":0.9,"excerpt":"...","reasons":["sample"],"citations":[]}],"jobs":[]}'
+  ```
+- フロントエンドからは `fetchPlan` を呼び出し、`AgentActivity` の 3 本目のトラックと「面談用プランボード」を描画します。LangGraph の実行ログはレスポンス `logs` に含まれ、UI の実行ログにも転記されます。
+
 ### GitHub Codespaces を利用する場合
 
 まず repository を fork してください。

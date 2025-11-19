@@ -14,13 +14,19 @@ BACKEND_PYTHON_REL ?= $(BACKEND_VENV_REL)/bin/python
 BACKEND_PORT ?= 8089
 FRONTEND_PORT ?= 5173
 
-.PHONY: install install-backend install-frontend dev backend frontend test lint fmt clean seed ensure-backend-venv
+.PHONY: install install-backend install-frontend dev backend frontend test lint fmt clean seed ensure-backend-venv ensure-frontend-node_modules
 
 # backend/.venv が無い場合は自動で生成する
 ensure-backend-venv:
 	@if [ ! -x "$(BACKEND_PYTHON)" ]; then \
 		echo "[backend] .venv not found; running '$(UV) sync'"; \
 		cd $(BACKEND_DIR) && $(UV) sync; \
+	fi
+
+ensure-frontend-node_modules:
+	@if [ ! -d "frontend/node_modules" ]; then \
+		echo "[frontend] node_modules not found; running 'npm install'"; \
+		cd frontend && npm install; \
 	fi
 
 install-backend:
@@ -36,10 +42,10 @@ backend: ensure-backend-venv
 	@MODE=$(MODE) DB_MODE=$(DB_MODE) BACKEND_PORT=$(BACKEND_PORT) bash -c 'cd backend && \
 	  $(BACKEND_PYTHON_REL) -m uvicorn uvicorn_app:app --reload --host 0.0.0.0 --port $$BACKEND_PORT'
 
-frontend:
+frontend: ensure-frontend-node_modules
 	cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 
-dev: ensure-backend-venv
+dev: ensure-backend-venv ensure-frontend-node_modules
 	@echo "Starting dev servers... (MODE=$(MODE), DB_MODE=$(DB_MODE), BACKEND_PORT=$(BACKEND_PORT), FRONTEND_PORT=$(FRONTEND_PORT))"
 	@MODE=$(MODE) DB_MODE=$(DB_MODE) BACKEND_PORT=$(BACKEND_PORT) FRONTEND_PORT=$(FRONTEND_PORT) bash -c 'set -euo pipefail; trap "kill 0" EXIT; \
 	  echo "[backend] launching on port $$BACKEND_PORT"; \

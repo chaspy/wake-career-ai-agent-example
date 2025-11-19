@@ -91,3 +91,29 @@ export const jobSearchResponseSchema = z.object({
 })
 
 export type JobSearchResponse = z.infer<typeof jobSearchResponseSchema>
+
+export const careerOptionSchema = z.object({
+  title: z.string(),
+  rationale: z.string(),
+  citation: z.string().url().optional().nullable(),
+  distance: z.string(),
+  risk: z.string(),
+  next: z.string(),
+})
+
+export const planReportSchema = z.object({
+  profileInsights: z.array(z.string()),
+  careerOptions: z.array(careerOptionSchema),
+  learning: z.array(z.string()),
+  actions: z.array(z.string()),
+  selfCheck: z.array(z.string()),
+})
+
+export const planResponseSchema = planReportSchema.extend({
+  mode: z.enum(['fake', 'live']),
+  logs: z.array(z.string()).default([]),
+})
+
+export type PlanCareerOption = z.infer<typeof careerOptionSchema>
+export type PlanReport = z.infer<typeof planReportSchema>
+export type PlanResponse = z.infer<typeof planResponseSchema>
