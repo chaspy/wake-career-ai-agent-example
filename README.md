@@ -104,15 +104,23 @@ uv のみ Install が必要です。ref: https://docs.astral.sh/uv/getting-start
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+OPENAI_API_KEY を設定しましょう。
+
+```
+cp .env.sample .env
+# edit .env to set OPENAI_API_KEY
+```
+
 まず、backend を起動してください
 
 ```
 cd backend/
 uv sync
+uv run scripts/seed.py
 uv run uvicorn uvicorn_app:app --reload --host 0.0.0.0 --port 8089
 ```
 
-その後、localhost:8089 にアクセスし、ブラウザに表示された url をメモしてください。
+その後、http://0.0.0.0:8089 にアクセスし、ブラウザに表示された url をメモしてください。
 
 例: `https://crispy-tribble-7gjr4vvgvp2p9w5-8089.app.github.dev`
 

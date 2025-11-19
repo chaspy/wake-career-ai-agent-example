@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings, get_runtime_mode, get_llm_provider
@@ -27,6 +27,11 @@ def create_app() -> FastAPI:
     @application.on_event("startup")
     async def _ensure_defaults() -> None:
         database.ensure_profile()
+
+    @application.get("/", tags=["meta"])
+    async def root(request: Request) -> dict[str, str]:
+        hostname = str(request.base_url).rstrip("/")
+        return {"message": f"hello! please use this hostname: {hostname}"}
 
     @application.get("/api/health", response_model=HealthResponse)
     async def health_check() -> HealthResponse:
