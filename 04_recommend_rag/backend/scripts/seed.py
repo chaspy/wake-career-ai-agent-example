@@ -6,12 +6,28 @@ import argparse
 import os
 from pathlib import Path
 
+import sys
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+REPO_ROOT = BASE_DIR.parent
+ENV_FILES = [BASE_DIR / ".env", REPO_ROOT / ".env"]
+for env_file in ENV_FILES:
+    if env_file.exists():
+        for raw in env_file.read_text().splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip())
+
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 from app.config import get_settings
 from app.db import database
 from app.rag import ingest
 from app.rag.vectorstore import VectorStoreError, persist_documents
 
-BASE_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_ARTICLE_DIR = BASE_DIR / "data" / "wake_articles"
 DEFAULT_VECTOR_DIR = BASE_DIR / "data" / "vectorstore"
 
