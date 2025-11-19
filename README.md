@@ -110,11 +110,11 @@ uv sync
 uv run uvicorn uvicorn_app:app --reload --host 0.0.0.0 --port 8089
 ```
 
-その後、localhost:8989 にアクセスし、ブラウザに表示された url をメモしてください。
+その後、localhost:8089 にアクセスし、ブラウザに表示された url をメモしてください。
 
 例: `https://crispy-tribble-7gjr4vvgvp2p9w5-8089.app.github.dev`
 
-そして 8989 port を public にしてください。
+そして 8089 port を public にしてください。
 
 ![](./port.png)
 
