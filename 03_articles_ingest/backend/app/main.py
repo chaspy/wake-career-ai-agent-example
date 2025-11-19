@@ -8,6 +8,7 @@ from typing import List
 
 import frontmatter
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.embeddings import FakeEmbeddings
@@ -96,6 +97,15 @@ class AdviceResponse(BaseModel):
 
 
 app = FastAPI(title="03_articles_rag", version="0.3.0")
+allowed_origins = os.getenv("ALLOWED_ORIGINS")
+origins = [o.strip() for o in allowed_origins.split(",")] if allowed_origins else ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")

@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
 
+const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) || ''
+const withBase = (path: string) => (API_BASE ? `${API_BASE.replace(/\/$/, '')}${path}` : path)
+
 type ArticleSummary = { slug: string; title: string; source_url: string }
 type ArticleDetail = ArticleSummary & { body: string }
 type Health = { ok: boolean; phase: string; mode: string; provider: string }
@@ -53,9 +56,9 @@ function App() {
   const loading = useMemo(() => status.includes('中') || status.includes('loading'), [status])
 
   useEffect(() => {
-    fetch('/api/health').then((r) => r.json()).then(setHealth)
-    fetch('/api/articles').then((r) => r.json()).then(setArticles)
-    fetch('/api/profile')
+    fetch(withBase('/api/health')).then((r) => r.json()).then(setHealth)
+    fetch(withBase('/api/articles')).then((r) => r.json()).then(setArticles)
+    fetch(withBase('/api/profile'))
       .then((res) => (res.status === 404 ? null : res.json()))
       .then((data) => data && setProfile(data))
       .catch(() => {})
@@ -67,7 +70,7 @@ function App() {
 
   const fetchRecs = async () => {
     setStatus('推薦取得中...')
-    const res = await fetch('/api/recommendations', {
+    const res = await fetch(withBase('/api/recommendations'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, top_k: 3 }),
@@ -83,7 +86,7 @@ function App() {
 
   const saveProfile = async () => {
     setStatus('保存中...')
-    const res = await fetch('/api/profile', {
+    const res = await fetch(withBase('/api/profile'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
@@ -100,7 +103,7 @@ function App() {
   const askAdvice = async () => {
     setAdviceLoading(true)
     setStatus('LLM 呼び出し中...')
-    const res = await fetch('/api/profile/advice', {
+    const res = await fetch(withBase('/api/profile/advice'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question }),
