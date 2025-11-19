@@ -8,6 +8,17 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
+BASE_DIR = Path(__file__).resolve().parents[1]
+ENV_FILES = [BASE_DIR / ".env", BASE_DIR.parent / ".env"]
+for env_file in ENV_FILES:
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip())
+
 DATA_FILE = Path(__file__).resolve().parent / "profile.json"
 
 class Profile(BaseModel):

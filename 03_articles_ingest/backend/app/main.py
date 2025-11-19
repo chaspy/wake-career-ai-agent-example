@@ -14,6 +14,17 @@ from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+BASE_DIR = Path(__file__).resolve().parents[1]
+ENV_FILES = [BASE_DIR / ".env", BASE_DIR.parent / ".env"]
+for env_file in ENV_FILES:
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip())
+
 DATA_DIR = Path(__file__).resolve().parent / "data"
 ARTICLES_DIR = DATA_DIR / "articles"
 VSTORE_DIR = DATA_DIR / "vectorstore"
