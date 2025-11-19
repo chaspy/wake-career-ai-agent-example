@@ -30,7 +30,12 @@ def create_app() -> FastAPI:
 
     @application.get("/", tags=["meta"])
     async def root(request: Request) -> dict[str, str]:
-        hostname = str(request.base_url).rstrip("/")
+        forwarded = request.headers.get("x-forwarded-host")
+        if forwarded:
+            scheme = request.headers.get("x-forwarded-proto", "https")
+            hostname = f"{scheme}://{forwarded}"
+        else:
+            hostname = str(request.base_url).rstrip("/")
         return {"message": f"hello! please use this hostname: {hostname}"}
 
     @application.get("/api/health", response_model=HealthResponse)
