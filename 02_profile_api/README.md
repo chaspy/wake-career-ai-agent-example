@@ -193,22 +193,36 @@ curl -X POST http://localhost:28089/api/profile/advice \
 - 将来の DB 切替に備え、I/O を関数で分離しているので Step03 以降に差し替えやすい構造。
 - frontend: フォーム入力 → 保存 → 再読込で値が残るシンプル UI。
 
-## 起動手順（最短）
+## 起動手順
+
+### 推奨: backend / frontend を個別に起動
+
+1. バックエンド（FastAPI）
+   ```bash
+   cd 02_profile_api/backend
+   uv sync
+   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 28089
+   ```
+   - プロフィール保存先はディレクトリ直下の `backend/app/profile.json`。OpenAI を使う場合は `export OPENAI_API_KEY=...` を設定してください（未設定なら fake 応答）。
+
+2. フロントエンド（Vite）
+   ```bash
+   cd 02_profile_api/frontend
+   npm install
+   npm run dev -- --host 0.0.0.0 --port 25073
+   ```
+   - `/api` へのリクエストは Vite の開発プロキシが `http://localhost:28089` に中継します。
+
+3. ブラウザで http://localhost:25073 を開き、プロフィール CRUD / アドバイス取得を動かしてください。
+
+### make が使える場合
 
 ```bash
 cd 02_profile_api
-make dev   # 初回は内部で uv run / npm install が走ります
+make dev   # backend 28089 / frontend 25073 を一括起動
 ```
 
-高速化したい場合（依存を事前導入）
-
-```bash
-cd 02_profile_api/backend && uv sync && cd ..
-cd frontend && npm install && cd ..
-make dev
-```
-
-デフォルトポートは backend 28089 / frontend 25073。競合する場合は `BACKEND_PORT` / `FRONTEND_PORT` を上書きしてください。
+`BACKEND_PORT` / `FRONTEND_PORT` を指定すればポートを変えられます（例: `BACKEND_PORT=29000 FRONTEND_PORT=26000 make dev`）。
 
 ### OpenAI を使う場合
 

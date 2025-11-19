@@ -5,17 +5,42 @@
 - `/api/recommendations` … FAISS 検索＋ fake/live 理由生成
 - `/api/jobs/search` … Wantedly/Remotive から求人を取得（キーワード・ロケーション）
 
-## 起動手順（最短）
+## 起動手順
+
+### 推奨: backend / frontend を個別に起動
+
+1. 依存導入とシード（初回のみ）
+   ```bash
+   cd 04_recommend_rag/backend
+   uv sync
+   MODE=fake DB_MODE=sqlite uv run python scripts/seed.py
+   ```
+   - OpenAI / DB を本番モードで使いたい場合は `MODE=live` や `DB_MODE=json` に変更してください。
+
+2. バックエンド
+   ```bash
+   cd 04_recommend_rag/backend
+   MODE=fake DB_MODE=sqlite uv run uvicorn uvicorn_app:app --reload --host 0.0.0.0 --port 48089
+   ```
+   - `MODE=fake` なら OpenAI キー無しでもオフライン理由生成で動きます。live にする場合は `export OPENAI_API_KEY=...` とモデル設定を行ってください。
+
+3. フロントエンド
+   ```bash
+   cd 04_recommend_rag/frontend
+   npm install
+   VITE_API_BASE=http://localhost:48089 npm run dev -- --host 0.0.0.0 --port 45073
+   ```
+
+4. ブラウザで http://localhost:45073 を開き、記事/RAG/求人の 3 カラムを確認。
+
+### make が使える場合
+
 ```bash
 cd 04_recommend_rag
-make dev   # 初回は内部で uv run / npm install が走ります
-
-# RAG 用ベクトルストアを作る（初回だけでOK）
-cd backend && uv sync && uv run python scripts/seed.py && cd ..
-cd frontend && npm install && cd ..
-make dev
-# ブラウザ: http://localhost:45073 （記事一覧・RAG・求人の3カラム表示）
+MODE=fake DB_MODE=sqlite make dev   # backend 48089 / frontend 45073
 ```
+
+ポート衝突時は `BACKEND_PORT` / `FRONTEND_PORT` を一緒に指定してください。
 
 ## 仕組みの要点
 - 記事/RAG 部分は Step03 と同じ（FAISS ロード＋類似検索）。

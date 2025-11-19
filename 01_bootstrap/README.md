@@ -24,16 +24,33 @@ return PingResponse(reply=str(out.content), mode="live")
 ```
 
 
-## 起動手順（最短）
+## 起動手順
+
+### 推奨: backend / frontend を個別に起動
+
+1. バックエンド（FastAPI）
+   ```bash
+   cd 01_bootstrap/backend
+   uv sync
+   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 18089
+   ```
+   - OpenAI を実際に叩きたい場合は、上記を実行するシェルで `export OPENAI_API_KEY=...` を設定してください。未設定でも fake 応答で動作します。
+
+2. フロントエンド（Vite）
+   ```bash
+   cd 01_bootstrap/frontend
+   npm install
+   npm run dev -- --host 0.0.0.0 --port 15073
+   ```
+   - `vite.config.ts` が `/api` を `http://localhost:18089` にプロキシするため、追加の環境変数設定は不要です。
+
+3. ブラウザで http://localhost:15073 を開き、ヘルスチェックと LLM 疎通を確認。
+
+### make が使える場合
+
 ```bash
 cd 01_bootstrap
-make dev   # 初回は内部で uv run / npm install が走ります
+make dev   # backend 18089 / frontend 15073 を同時起動
 ```
 
-依存を先に入れて高速起動したい場合:
-```bash
-cd 01_bootstrap/backend && uv sync && cd ..
-cd frontend && npm install && cd ..
-make dev
-```
-ポート変更は `BACKEND_PORT` / `FRONTEND_PORT` を上書きしてください（デフォルト 18089 / 15073）。
+`BACKEND_PORT` と `FRONTEND_PORT` を上書きするとポートを変えられます（例: `BACKEND_PORT=19000 FRONTEND_PORT=16000 make dev`）。

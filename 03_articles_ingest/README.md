@@ -8,19 +8,42 @@
 - `/api/recommendations` … ベクトル検索＋ fake/live 理由生成
 - サンプル記事: `backend/app/data/articles/sample.md`
 
-## 起動手順（最短）
+## 起動手順
+
+### 推奨: backend / frontend を個別に起動
+
+1. 依存インストールとシード（初回のみ）
+   ```bash
+   cd 03_articles_ingest/backend
+   uv sync
+   uv run python scripts/seed.py    # FAISS ベクトルストア作成
+   ```
+
+2. バックエンド
+   ```bash
+   cd 03_articles_ingest/backend
+   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 38089
+   ```
+   - OPENAI キーが無ければ FakeEmbeddings + fake 応答で動作します。live で試す場合は `export OPENAI_API_KEY=...`。
+
+3. フロントエンド
+   ```bash
+   cd 03_articles_ingest/frontend
+   npm install
+   npm run dev -- --host 0.0.0.0 --port 35073
+   ```
+   - `/api` リクエストは `http://localhost:38089` にプロキシされます。
+
+4. ブラウザ: http://localhost:35073
+
+### make が使える場合
+
 ```bash
 cd 03_articles_ingest
-make dev   # 初回は内部で uv run / npm install が走ります
+make dev   # backend 38089 / frontend 35073 を一括起動
 ```
 
-RAG 用ベクトルストアを作る（初回だけでOK）
-```bash
-cd 03_articles_ingest/backend && uv sync && uv run python scripts/seed.py && cd ..
-cd frontend && npm install && cd ..
-make dev
-```
-デフォルトポート: backend 38089 / frontend 35073。競合時は `BACKEND_PORT` / `FRONTEND_PORT` を上書きしてください。
+ポート競合時は `BACKEND_PORT` / `FRONTEND_PORT` を指定して上書きしてください。
 
 ## 仕組みの要点
 - プロフィール: `/api/profile` が JSON を読み書き、`/api/profile/advice` は保存済みプロフィールをプロンプトに入れて ChatOpenAI（キー未設定時は fake テキスト）を叩きます。
