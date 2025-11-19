@@ -20,6 +20,11 @@
 
 ## Setup
 
+### 推奨環境
+
+- 対象 OS は macOS または Linux を推奨しています。Windows ネイティブ環境での動作保証は無いため、Windows ユーザは WSL2 上での実行を前提にしてください。
+- 現時点（2025/11/19 時点）で動作確認できているのは GitHub Codespaces と macOS のみです。その他の環境では依存パッケージやパス設定に差異がある可能性があります。
+
 ## QuickStart
 
 git, node, python, uv がある場合、以下で動作確認ができます。
@@ -75,11 +80,49 @@ make dev   # backend:8089 / frontend:5173
 
 ### 各フェーズ共通の起動手順（uv sync 統一）
 
+.env ファイルの用意
+
+```
+cp .env.sample .env  # 未作成の場合。OPENAI_API_KEY を含めて編集
+```
+
 以下のコマンドブロックを、対象フェーズのディレクトリ名とポートに置き換えて実行してください。
 
 ```bash
 cd 02_profile_api
+```
 
+Frontend と Backend 双方で起動してください。
+
+#### バックエンド（FastAPI）
+
+```bash
+cp .env.sample .env  # 未作成の場合。OPENAI_API_KEY を含めて編集
+cd backend
+uv sync  # 依存インストールと仮想環境作成
+MODE=fake DB_MODE=sqlite BACKEND_PORT=8089 uv run uvicorn uvicorn_app:app --reload --host 0.0.0.0 --port ${BACKEND_PORT}
+```
+
+- `MODE` を `fake` にしておけば OpenAI API キーなしでデモデータを返せます。実運用したい場合は `.env` と同じ値（例: `live`）に揃えてください。
+- ポートを変えたい場合は `BACKEND_PORT` と `--port` の値を同じ番号に更新します。
+
+#### フロントエンド（Vite + React）
+
+```bash
+cd frontend
+npm install
+VITE_API_BASE=http://localhost:8089 npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+- `VITE_API_BASE` はバックエンドの URL に合わせます（例: 上記では `http://localhost:8089`）。ポートを変えた場合はこの値も同期してください。
+- `npm run dev` の末尾 `--port` を変えることで 5173 以外のポートでも起動できます。
+
+バックエンドとフロントエンドは別ターミナルで同時に走らせる必要があります。`01_bootstrap` などステップ別スナップショットを動かす場合も、対象ディレクトリ配下の `backend/` と `frontend/` に移動して同じ手順を踏めば OK です。
+
+### 補足
+
+Makefile を使える環境であれば
+
+```
 make dev
-# ブラウザ: http://localhost:25073
 ```
