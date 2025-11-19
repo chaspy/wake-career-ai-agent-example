@@ -3,7 +3,7 @@ import os
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
@@ -45,6 +45,16 @@ DEFAULT_PROFILE = Profile(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="02_profile_api")
+
+@app.get("/")
+def root(request: Request):
+    forwarded = request.headers.get("x-forwarded-host")
+    if forwarded:
+        scheme = request.headers.get("x-forwarded-proto", "https")
+        hostname = f"{scheme}://{forwarded}"
+    else:
+        hostname = str(request.base_url).rstrip("/")
+    return {"message": f"hello! please use this hostname: {hostname}"}
 
 @app.get("/api/health")
 def health():

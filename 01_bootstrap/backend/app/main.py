@@ -1,9 +1,20 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 import os
 
 app = FastAPI(title="Bootstrap API")
+
+
+@app.get("/")
+async def root(request: Request) -> dict[str, str]:
+    forwarded = request.headers.get("x-forwarded-host")
+    if forwarded:
+        scheme = request.headers.get("x-forwarded-proto", "https")
+        hostname = f"{scheme}://{forwarded}"
+    else:
+        hostname = str(request.base_url).rstrip("/")
+    return {"message": f"hello! please use this hostname: {hostname}"}
 
 class PingRequest(BaseModel):
     prompt: str = "はじめまして！"

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List
 
 import frontmatter
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.embeddings import FakeEmbeddings
@@ -83,6 +83,17 @@ class AdviceResponse(BaseModel):
 
 
 app = FastAPI(title="03_articles_rag", version="0.3.0")
+
+
+@app.get("/")
+def root(request: Request):
+    forwarded = request.headers.get("x-forwarded-host")
+    if forwarded:
+        scheme = request.headers.get("x-forwarded-proto", "https")
+        hostname = f"{scheme}://{forwarded}"
+    else:
+        hostname = str(request.base_url).rstrip("/")
+    return {"message": f"hello! please use this hostname: {hostname}"}
 
 
 # ---------------------------------------------------------------------------
