@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import get_settings, get_runtime_mode, get_llm_provider
+from .config import get_llm_provider, get_runtime_mode, get_settings
 from .db import database
 from .models import HealthResponse
-from .routers import profile, recommend, articles, jobs
+from .routers import articles, jobs, plan, profile, recommend
 
 
 def create_app() -> FastAPI:
@@ -23,6 +23,7 @@ def create_app() -> FastAPI:
     application.include_router(recommend.router)
     application.include_router(articles.router)
     application.include_router(jobs.router)
+    application.include_router(plan.router)
 
     @application.on_event("startup")
     async def _ensure_defaults() -> None:
@@ -40,7 +41,7 @@ def create_app() -> FastAPI:
 
     @application.get("/api/health", response_model=HealthResponse)
     async def health_check() -> HealthResponse:
-        return HealthResponse(ok=True, mode=get_runtime_mode(), provider="OpenAI")
+        return HealthResponse(ok=True, mode=get_runtime_mode(), provider=get_llm_provider())
 
     return application
 

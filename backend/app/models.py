@@ -152,3 +152,31 @@ class JobSearchResponse(BaseModel):
     jobs: list[JobSummary]
     sources: list[str]
     queries: list[str] = Field(default_factory=list)
+
+
+class PlanCareerOption(BaseModel):
+    title: str
+    rationale: str
+    citation: Optional[str] = None
+    distance: str
+    risk: str
+    next: str
+
+
+class PlanReport(BaseModel):
+    profileInsights: list[str] = Field(default_factory=list)
+    careerOptions: list[PlanCareerOption] = Field(default_factory=list)
+    learning: list[str] = Field(default_factory=list)
+    actions: list[str] = Field(default_factory=list)
+    selfCheck: list[str] = Field(default_factory=list)
+
+
+class PlanRequest(BaseModel):
+    profile: Optional[Profile] = None
+    recommendations: list[Recommendation] = Field(default_factory=list, min_length=1)
+    jobs: list[JobSummary] = Field(default_factory=list)
+
+
+class PlanResponse(PlanReport):
+    mode: Literal["fake", "live"]
+    logs: list[str] = Field(default_factory=list)

@@ -10,65 +10,88 @@
 
 ## 04 → 05 の主な差分
 
-- **プランニングエージェントの追加（フロントのみ）**: 記事推薦・求人結果を入力に、学習/行動/自己検証チェックを決定論的ロジックで生成し、「面談用プランボード」として描画します（`frontend/src/pages/Home.tsx:116-207, 375-447`）。
-- **AgentActivity の 3 レーン化**: 推薦・求人・プランニングの進行を並列表示し、plan → synthesize → validate → done の各段階とエラーを可視化します（`frontend/src/components/AgentActivity.tsx:3-137`）。
-- **求人連携の強化**: Job エージェントの探索クエリや取得ソースを Planner が参照できるようにし、プラン生成の文脈へ引き継ぎます（`frontend/src/pages/Home.tsx:205-256`）。
-- **初期プロフィールを WAKE Guest へ刷新**: 参加者がキー未設定でも動かしやすいサンプルプロフィールに変更しました（`backend/app/db.py:26-43`）。
-- **ポート/CORS/Makefile の最終化**: backend 8089 / frontend 5173 をデフォルトにし、`backend/app/config.py:25-28` で allowed_origins を揃えています。
+- **プランニングエージェントを LangGraph + FastAPI で追加**: `/api/plan` が推薦・求人を受け取り、live では OpenAI / fake では決定論的テンプレでプランを返します（`backend/app/planner/graph.py`、`backend/app/routers/plan.py`、`backend/app/tests/test_plan.py`）。
+- **フロントから Planner を起動しプランボード描画**: 記事/求人取得後に Planner を呼び、ログを可視化して面談用プランボードへ反映します（`frontend/src/pages/Home.tsx:115-213, 322-395`）。
+- **AgentActivity の 3 レーン化**: 推薦・求人・プランニングの進行を並列表示し、plan → synthesize → validate → done を段階表示します（`frontend/src/components/AgentActivity.tsx`）。
+- **求人クエリ/ソースの受け渡し強化**: Job エージェントの試行クエリと取得元を Planner/プランボードにも共有するよう整理しました（`frontend/src/pages/Home.tsx` の jobStage 処理周辺）。
+- **初期プロフィールとポート設定の更新**: サンプルを WAKE Guest に差し替え、デフォルトポートを backend 8089 / frontend 5173 に統一し CORS も合わせました（`backend/app/db.py:28-36`、`backend/app/config.py`、`Makefile`）。
 
 ## コード差分の見どころ
 
+- `backend/app/planner/graph.py`, `backend/app/routers/plan.py`  
+  - LangGraph で「prepare → call_model → finalize」のシンプルなステートマシンを構築。live: OpenAI で JSON 生成、失敗/キーなし: オフラインテンプレにフォールバック。
+- `backend/app/tests/test_plan.py`  
+  - `/api/plan` が fake モードでもレポートを返すことを検証し、最終フェーズのフェイルセーフを担保。
 - `frontend/src/pages/Home.tsx`  
-  - `PlanReport` 型、`plannerStage` ステート、`buildPlanReport` ヘルパを追加し、推薦→求人→プランニングの 3 段パイプラインを構築。
-  - `handleRecommend` 内で Planner を明示的に発火し、ログ/アニメーションを LangGraph 風に見せています。
+  - `plannerStage` と `fetchPlan` 呼び出しを組み込み、推薦→求人→プラン生成を一連で実行。PlanReport を受け取りプランボードへ描画。
 - `frontend/src/components/AgentActivity.tsx`  
-  - Planner 用のバッジとステージドットを追加し、他エージェントと同じログストリームを使い回す設計。
+  - Planner レーンの追加とログ表示を共通化し、ステージの色分け/バッジを拡充。
 - `frontend/src/App.css`  
-  - `.plan-section`, `.plan-grid`, `.plan-card`, `.option-table` などのスタイルを追加し、カードベースで Learning/Action/Self-check をレイアウト。
-- `backend/app/jobs/__init__.py`  
-  - 04 と同一ロジック（Wantedly/Remotive クロール → LLM or キーワードスコア → 最大 3 回リトライ）を維持しつつ、Planner 表示用に `queries` / `sources` を整形。
-- `backend/app/db.py`  
-  - `DEFAULT_PROFILE` を Generalist 5 年の WAKE Guest に差し替え、初期状態でもプラン生成が成立するようにしました。
+  - プランボード用の `.plan-section`/`.plan-grid`/`.option-table` などを追加し、カードレイアウトに調整。
 
 ## 代表的なスニペット
 
 ### 推薦→求人→プランのステージ制御（`frontend/src/pages/Home.tsx`）
 
 ```tsx
-const [plannerStage, setPlannerStage] = useState<'idle'|'plan'|'synthesize'|'validate'|'done'|'error'>('idle');
-const [planReport, setPlanReport] = useState<PlanReport | null>(null);
-
 const handleRecommend = async () => {
-  const recoResponse = await fetchRecommendations(...);
-  setRecommendations(recoResponse.recommendations);
-  // Planner を発火
   setPlannerStage('plan');
-  const report = buildPlanReport(recoResponse.recommendations, readyProfile);
-  await sleep(120);
-  setPlanReport(report);
-  setPlannerStage('done');
+  const jobResponse = await searchJobs(...);
+  const recoResponse = await fetchRecommendations(...);
+  if (recoResponse.recommendations.length > 0) {
+    const planResponse = await fetchPlan({
+      profile: readyProfile ?? undefined,
+      recommendations: recoResponse.recommendations,
+      jobs: jobResponse.jobs,
+    });
+    planResponse.logs.forEach((entry) => logActivity(`Planner: ${entry}`));
+    setPlanReport({
+      profileInsights: planResponse.profileInsights,
+      careerOptions: planResponse.careerOptions,
+      learning: planResponse.learning,
+      actions: planResponse.actions,
+      selfCheck: planResponse.selfCheck,
+    });
+    setPlannerStage('done');
+  }
 };
 ```
 
 ### AgentActivity へのレーン追加（`frontend/src/components/AgentActivity.tsx`）
 
 ```tsx
-type PlannerStage = 'idle'|'plan'|'synthesize'|'validate'|'done'|'error';
-
-const plannerSteps: Record<PlannerStage, ActivityStep> = {
-  plan: { label: 'プランニング', color: 'blue' },
-  synthesize: { label: '統合', color: 'blue' },
-  validate: { label: '自己検証', color: 'blue' },
-  done: { label: '完了', color: 'green' },
-  error: { label: '失敗', color: 'red' },
-  idle: { label: '待機', color: 'slate' },
-};
+<div className="agent-trail">
+  <div className="agent-row">
+    <span className={statusDot(plannerStage === 'error' ? 'error' : plannerStage === 'done' ? 'done' : plannerStage === 'idle' ? 'idle' : 'active')} />
+    <div>
+      <p className="agent-label">プランニングエージェント</p>
+      <p className="agent-status">
+        {plannerStage === 'plan'
+          ? '推薦記事と求人を読み込み、学習/行動プランの骨子を整理中…'
+          : plannerStage === 'synthesize'
+            ? '要点を抽出し、プロフィールに合わせて優先順位付け中…'
+            : plannerStage === 'validate'
+              ? '自己検証チェックリストを追加中…'
+              : plannerStage === 'error'
+                ? `エラー: ${plannerError}`
+                : plannerStage === 'done'
+                  ? '初回面談用のプランを作成しました。下部のプランボードを確認できます。'
+                  : 'まだ実行していません。おすすめ取得後に自動で走ります。'}
+      </p>
+      <div className="agent-steps">
+        <span className={`agent-chip ${stageToChip(plannerStage, 'plan')}`}>インプット整理</span>
+        <span className={`agent-chip ${stageToChip(plannerStage, 'synthesize')}`}>要約/優先度付け</span>
+        <span className={`agent-chip ${stageToChip(plannerStage, 'validate')}`}>自己検証</span>
+      </div>
+    </div>
+  </div>
+</div>
 ```
 
 ## LangGraph の扱い
 
-- `backend/app/rag/graph.py` の StateGraph (`build_query → retrieve → call_model → respond`) は 04 から変更なし。MODE=fake では `_call_model` がオフライン回答を返すフェイルセーフも据え置きです。
-- 05 で追加された Planner はフロントエンド内で完結する決定論的ロジックのため、LangGraph のノードやトポロジーを修正せずに「エージェントがもう 1 体いる」ように見せています。
+- 推薦用 LangGraph（`backend/app/rag/graph.py`）は 04 と同じ直列フロー（build_query → retrieve → call_model → respond）。fake では offline_answer へフォールバック。
+- 05 で新設したプランニング LangGraph（`backend/app/planner/graph.py`）は prepare → call_model → finalize の 3 ノード構成。live: OpenAI で PlanReport を生成、fake: 決定論的テンプレートで必ず 1 プランを返します。
 
 ## 起動・シード手順（完成版）
 
@@ -101,8 +124,8 @@ make seed                           # ベクトルストア生成（初回のみ
 ## 触って学ぶチェックポイント
 
 - 「おすすめを取得」を押し、AgentActivity で 3 レーンが進む様子と Planner のログコピーを確認。
-- 面談用プランボードで Learning / Action / Self-check の各カードを自分のプロフィールに合わせて書き換え、`buildPlanReport` のテンプレを編集すると即座に UI が更新されることを体感。
-- 04 の UI と比較し、LangGraph+求人ロジックを据え置いたままフロントのみでプランニング層を後付けできる構成を確認。
+- プロフィールや求人キーワードを変えて「おすすめを取得」を再実行し、プランボードの Learning / Action / Self-check がどう変わるか確認。
+- 04 の UI と比較し、RAG+求人は据え置きのまま、バックエンドに LangGraph Planner を足してフロントでログ/プラン表示を拡張した構成を確認。
 
 ## 学習ポイント
 

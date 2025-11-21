@@ -3,6 +3,7 @@ import {
   articleSummarySchema,
   healthResponseSchema,
   jobSearchResponseSchema,
+  planResponseSchema,
   profileResponseSchema,
   profileSchema,
   recommendationResponseSchema,
@@ -10,8 +11,11 @@ import {
   type ArticleSummary,
   type HealthResponse,
   type JobSearchResponse,
+  type JobSummary,
+  type PlanResponse,
   type Profile,
   type ProfileResponse,
+  type Recommendation,
   type RecommendationResponse,
 } from './types'
 
@@ -119,4 +123,21 @@ export async function searchJobs(params: {
   })
   const data = await res.json()
   return jobSearchResponseSchema.parse(data)
+}
+
+export async function fetchPlan(params: {
+  profile?: Profile | null
+  recommendations: Recommendation[]
+  jobs: JobSummary[]
+}): Promise<PlanResponse> {
+  const res = await request('/api/plan', {
+    method: 'POST',
+    body: JSON.stringify({
+      profile: params.profile ?? undefined,
+      recommendations: params.recommendations,
+      jobs: params.jobs,
+    }),
+  })
+  const data = await res.json()
+  return planResponseSchema.parse(data)
 }
